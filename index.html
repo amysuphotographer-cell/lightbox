@@ -2255,7 +2255,9 @@
                         <ul class="mindmap-branch-items">
                             <li><strong>单个文件夹：</strong>点击"选择文件夹"按钮，选择包含图片的文件夹</li>
                             <li><strong>多个文件夹：</strong>使用"添加更多文件夹"功能，可加载多个文件夹进行对比</li>
-                            <li><strong>支持格式：</strong>JPG, PNG, GIF, WEBP, BMP 以及 RAW 格式 (CR2, NEF, ARW等)</li>
+                            <li><strong>支持格式：</strong>JPG, PNG, GIF, WEBP, BMP 以及 RAW 格式</li>
+                            <li><strong>RAW格式：</strong>CR2, CR3, NEF, ARW, ORF, DNG, PEF, SR2, SRF, 3FR, RW2, SRW, RAF, MRW, NRW, X3F, ERF, KDC, DCR 等</li>
+                            <li><strong>RAW预览：</strong>自动提取嵌入的JPEG预览图，如无法提取则显示图标</li>
                         </ul>
                     </div>
 
@@ -2400,8 +2402,8 @@
 
         // RAW 文件扩展名列表
         const RAW_EXTENSIONS = [
-            'cr2', 'cr3', 'nef', 'arw', 'dng', 'orf', 'rw2', 'pef', 'srw',
-            'raf', 'raw', 'rwl', 'mrw', 'nrw', 'x3f', 'erf', 'kdc', 'dcr', 'sr2'
+            'cr2', 'cr3', 'nef', 'arw', 'dng', 'orf', 'rw2', 'pef', 'srw', 'srf',
+            'raf', 'raw', 'rwl', 'mrw', 'nrw', 'x3f', 'erf', 'kdc', 'dcr', 'sr2', '3fr'
         ];
 
         // 检查是否是图片文件（包括RAW格式）
@@ -2419,6 +2421,56 @@
         function isRawFile(file) {
             const ext = file.name.split('.').pop().toLowerCase();
             return RAW_EXTENSIONS.includes(ext);
+        }
+
+        // 从RAW文件中提取嵌入的JPEG预览图
+        async function extractRawPreview(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const buffer = new Uint8Array(e.target.result);
+
+                        // 查找JPEG标记 (0xFFD8 = JPEG开始, 0xFFD9 = JPEG结束)
+                        let jpegStart = -1;
+                        let jpegEnd = -1;
+
+                        // 搜索JPEG起始标记
+                        for (let i = 0; i < buffer.length - 1; i++) {
+                            if (buffer[i] === 0xFF && buffer[i + 1] === 0xD8) {
+                                jpegStart = i;
+                                break;
+                            }
+                        }
+
+                        // 如果找到起始标记，搜索结束标记
+                        if (jpegStart !== -1) {
+                            for (let i = jpegStart + 2; i < buffer.length - 1; i++) {
+                                if (buffer[i] === 0xFF && buffer[i + 1] === 0xD9) {
+                                    jpegEnd = i + 2;
+                                    break;
+                                }
+                            }
+                        }
+
+                        // 如果找到完整的JPEG数据，提取并转换为URL
+                        if (jpegStart !== -1 && jpegEnd !== -1) {
+                            const jpegData = buffer.slice(jpegStart, jpegEnd);
+                            const blob = new Blob([jpegData], { type: 'image/jpeg' });
+                            const url = URL.createObjectURL(blob);
+                            resolve(url);
+                        } else {
+                            // 没有找到嵌入的JPEG，返回null
+                            resolve(null);
+                        }
+                    } catch (error) {
+                        console.error('提取RAW预览失败:', error);
+                        resolve(null);
+                    }
+                };
+                reader.onerror = () => resolve(null);
+                reader.readAsArrayBuffer(file);
+            });
         }
 
         // 从 localStorage 加载评分
@@ -2818,12 +2870,29 @@
                 const end = start + imagesPerPage;
                 const currentImages = allImages.slice(start, end);
 
-                currentImages.forEach((file) => {
+                currentImages.forEach(async (file) => {
+                    const imageKey = `${file.name}_${file.size}`;
+
                     if (isRawFile(file)) {
-                        const card = createImageCard(file, null, true);
-                        gallery.appendChild(card);
+                        // 检查缓存
+                        if (imageCache[imageKey]) {
+                            const card = createImageCard(file, imageCache[imageKey], false);
+                            gallery.appendChild(card);
+                        } else {
+                            // 尝试提取RAW文件中的预览图
+                            const previewUrl = await extractRawPreview(file);
+                            if (previewUrl) {
+                                // 成功提取预览图，保存到缓存
+                                imageCache[imageKey] = previewUrl;
+                                const card = createImageCard(file, previewUrl, false);
+                                gallery.appendChild(card);
+                            } else {
+                                // 无法提取预览图，显示图标
+                                const card = createImageCard(file, null, true);
+                                gallery.appendChild(card);
+                            }
+                        }
                     } else {
-                        const imageKey = `${file.name}_${file.size}`;
                         // 检查缓存
                         if (imageCache[imageKey]) {
                             const card = createImageCard(file, imageCache[imageKey], false);
@@ -2842,15 +2911,32 @@
                 });
             } else {
                 // 多文件夹对比模式：每次显示每个文件夹的第currentPage张
-                folders.forEach((folder, folderIndex) => {
+                folders.forEach(async (folder, folderIndex) => {
                     const file = folder.images[currentPage];
 
                     if (file) {
+                        const imageKey = `${file.name}_${file.size}`;
+
                         if (isRawFile(file)) {
-                            const card = createImageCard(file, null, true, folderIndex);
-                            gallery.appendChild(card);
+                            // 检查缓存
+                            if (imageCache[imageKey]) {
+                                const card = createImageCard(file, imageCache[imageKey], false, folderIndex);
+                                gallery.appendChild(card);
+                            } else {
+                                // 尝试提取RAW文件中的预览图
+                                const previewUrl = await extractRawPreview(file);
+                                if (previewUrl) {
+                                    // 成功提取预览图，保存到缓存
+                                    imageCache[imageKey] = previewUrl;
+                                    const card = createImageCard(file, previewUrl, false, folderIndex);
+                                    gallery.appendChild(card);
+                                } else {
+                                    // 无法提取预览图，显示图标
+                                    const card = createImageCard(file, null, true, folderIndex);
+                                    gallery.appendChild(card);
+                                }
+                            }
                         } else {
-                            const imageKey = `${file.name}_${file.size}`;
                             // 检查缓存
                             if (imageCache[imageKey]) {
                                 const card = createImageCard(file, imageCache[imageKey], false, folderIndex);
@@ -3647,23 +3733,35 @@
                 // 显示图片（最多显示前20张）
                 const displayImages = filteredImages.slice(0, 20);
 
-                displayImages.forEach(file => {
+                displayImages.forEach(async (file) => {
                     const imageKey = `${file.name}_${file.size}`;
 
                     // 检查是否是RAW文件
                     if (isRawFile(file)) {
-                        // RAW文件显示图标
-                        const ext = file.name.split('.').pop().toUpperCase();
-                        const item = document.createElement('div');
-                        item.className = 'preview-image-item';
-                        item.innerHTML = `
-                            <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-card) 100%);">
-                                <div style="font-size: 2rem; opacity: 0.6;">📷</div>
-                                <div style="font-size: 0.7rem; color: var(--primary-purple); margin-top: 4px;">${ext}</div>
-                            </div>
-                            <div class="preview-image-name">${file.name}</div>
-                        `;
-                        grid.appendChild(item);
+                        // 检查缓存
+                        if (imageCache[imageKey]) {
+                            addPreviewImage(grid, imageCache[imageKey], file.name);
+                        } else {
+                            // 尝试提取RAW预览
+                            const previewUrl = await extractRawPreview(file);
+                            if (previewUrl) {
+                                imageCache[imageKey] = previewUrl;
+                                addPreviewImage(grid, previewUrl, file.name);
+                            } else {
+                                // 无法提取，显示图标
+                                const ext = file.name.split('.').pop().toUpperCase();
+                                const item = document.createElement('div');
+                                item.className = 'preview-image-item';
+                                item.innerHTML = `
+                                    <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-card) 100%);">
+                                        <div style="font-size: 2rem; opacity: 0.6;">📷</div>
+                                        <div style="font-size: 0.7rem; color: var(--primary-purple); margin-top: 4px;">${ext}</div>
+                                    </div>
+                                    <div class="preview-image-name">${file.name}</div>
+                                `;
+                                grid.appendChild(item);
+                            }
+                        }
                     } else {
                         // 普通图片
                         if (imageCache[imageKey]) {
@@ -3750,7 +3848,7 @@
         // ==================== 对比功能 ====================
 
         // 切换对比选择
-        function toggleCompareSelection(imageKey, checked) {
+        async function toggleCompareSelection(imageKey, checked) {
             if (checked) {
                 compareSelection.add(imageKey);
                 // 查找对应的文件对象
@@ -3760,12 +3858,35 @@
                     if (!compareImages.some(img => `${img.file.name}_${img.file.size}` === imageKey)) {
                         // 获取图片URL
                         if (isRawFile(file)) {
-                            compareImages.push({
-                                file: file,
-                                imageUrl: null,
-                                isRaw: true,
-                                folderName: file.folderName  // 添加文件夹名称
-                            });
+                            // 检查缓存
+                            if (imageCache[imageKey]) {
+                                compareImages.push({
+                                    file: file,
+                                    imageUrl: imageCache[imageKey],
+                                    isRaw: false,
+                                    folderName: file.folderName
+                                });
+                            } else {
+                                // 尝试提取RAW预览
+                                const previewUrl = await extractRawPreview(file);
+                                if (previewUrl) {
+                                    imageCache[imageKey] = previewUrl;
+                                    compareImages.push({
+                                        file: file,
+                                        imageUrl: previewUrl,
+                                        isRaw: false,
+                                        folderName: file.folderName
+                                    });
+                                } else {
+                                    // 无法提取预览，标记为RAW
+                                    compareImages.push({
+                                        file: file,
+                                        imageUrl: null,
+                                        isRaw: true,
+                                        folderName: file.folderName
+                                    });
+                                }
+                            }
                         } else {
                             if (imageCache[imageKey]) {
                                 compareImages.push({
@@ -3828,13 +3949,13 @@
         }
 
         // 多文件夹模式：直接打开对比（不需要勾选）
-        function openDirectCompare() {
+        async function openDirectCompare() {
             // 清空现有选择
             compareImages = [];
             compareSelection.clear();
 
             // 收集当前页面显示的所有图片
-            folders.forEach((folder, folderIndex) => {
+            for (const folder of folders) {
                 const file = folder.images[currentPage];
                 if (file) {
                     const imageKey = `${file.name}_${file.size}`;
@@ -3844,12 +3965,35 @@
 
                     // 检查是否是RAW文件
                     if (isRawFile(file)) {
-                        compareImages.push({
-                            file: file,
-                            imageUrl: null,
-                            isRaw: true,
-                            folderName: folder.name  // 添加文件夹名称
-                        });
+                        // 检查缓存
+                        if (imageCache[imageKey]) {
+                            compareImages.push({
+                                file: file,
+                                imageUrl: imageCache[imageKey],
+                                isRaw: false,
+                                folderName: folder.name
+                            });
+                        } else {
+                            // 尝试提取RAW预览
+                            const previewUrl = await extractRawPreview(file);
+                            if (previewUrl) {
+                                imageCache[imageKey] = previewUrl;
+                                compareImages.push({
+                                    file: file,
+                                    imageUrl: previewUrl,
+                                    isRaw: false,
+                                    folderName: folder.name
+                                });
+                            } else {
+                                // 无法提取预览
+                                compareImages.push({
+                                    file: file,
+                                    imageUrl: null,
+                                    isRaw: true,
+                                    folderName: folder.name
+                                });
+                            }
+                        }
                     } else {
                         // 从缓存获取图片URL
                         if (imageCache[imageKey]) {
@@ -3862,7 +4006,7 @@
                         }
                     }
                 }
-            });
+            }
 
             // 如果有图片，打开对比模态框
             if (compareImages.length > 0) {
@@ -4590,30 +4734,19 @@
         }
 
         // 渲染报告中的图片列表
-        function renderReportImages(containerId, images) {
+        async function renderReportImages(containerId, images) {
             const container = document.getElementById(containerId);
             if (!container) return;
 
-            images.forEach((file, fileIndex) => {
+            for (let fileIndex = 0; fileIndex < images.length; fileIndex++) {
+                const file = images[fileIndex];
                 const imageKey = `${file.name}_${file.size}`;
                 const item = document.createElement('div');
                 item.className = 'report-image-item';
+                const itemId = `${containerId}-img-${fileIndex}`;
 
                 if (isRawFile(file)) {
-                    // RAW文件显示图标
-                    const ext = file.name.split('.').pop().toUpperCase();
-                    item.innerHTML = `
-                        <div class="report-image-thumb">
-                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                                <div style="font-size: 3rem; opacity: 0.6;">📷</div>
-                                <div style="font-size: 0.9rem; color: var(--primary-purple); margin-top: 8px;">${ext}</div>
-                            </div>
-                        </div>
-                        <div class="report-image-filename" contenteditable="true" title="${file.name}">${file.name}</div>
-                    `;
-                } else {
-                    // 普通图片
-                    const itemId = `${containerId}-img-${fileIndex}`;
+                    // 检查缓存
                     if (imageCache[imageKey]) {
                         item.innerHTML = `
                             <div class="report-image-thumb">
@@ -4622,7 +4755,63 @@
                             </div>
                             <div class="report-image-filename" contenteditable="true" title="${file.name}">${file.name}</div>
                         `;
+                        container.appendChild(item);
                     } else {
+                        // 先显示加载占位符
+                        item.innerHTML = `
+                            <div class="report-image-thumb">
+                                <div style="color: var(--text-muted);">正在提取RAW预览...</div>
+                            </div>
+                            <div class="report-image-filename" contenteditable="true" title="${file.name}">${file.name}</div>
+                        `;
+                        container.appendChild(item);
+
+                        // 尝试提取RAW预览
+                        const previewUrl = await extractRawPreview(file);
+                        if (previewUrl) {
+                            imageCache[imageKey] = previewUrl;
+                            item.innerHTML = `
+                                <div class="report-image-thumb">
+                                    <img src="${previewUrl}" alt="${file.name}" id="${itemId}" onclick="openReportImageModal('${itemId}')" title="点击放大">
+                                    <button class="report-image-replace-btn" onclick="event.stopPropagation(); replaceReportImage('${itemId}')" title="替换图片">🔄</button>
+                                </div>
+                                <div class="report-image-filename" contenteditable="true" title="${file.name}">${file.name}</div>
+                            `;
+                        } else {
+                            // 无法提取，显示图标
+                            const ext = file.name.split('.').pop().toUpperCase();
+                            item.innerHTML = `
+                                <div class="report-image-thumb">
+                                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                        <div style="font-size: 3rem; opacity: 0.6;">📷</div>
+                                        <div style="font-size: 0.9rem; color: var(--primary-purple); margin-top: 8px;">${ext}</div>
+                                    </div>
+                                </div>
+                                <div class="report-image-filename" contenteditable="true" title="${file.name}">${file.name}</div>
+                            `;
+                        }
+                    }
+                } else {
+                    // 普通图片
+                    if (imageCache[imageKey]) {
+                        item.innerHTML = `
+                            <div class="report-image-thumb">
+                                <img src="${imageCache[imageKey]}" alt="${file.name}" id="${itemId}" onclick="openReportImageModal('${itemId}')" title="点击放大">
+                                <button class="report-image-replace-btn" onclick="event.stopPropagation(); replaceReportImage('${itemId}')" title="替换图片">🔄</button>
+                            </div>
+                            <div class="report-image-filename" contenteditable="true" title="${file.name}">${file.name}</div>
+                        `;
+                        container.appendChild(item);
+                    } else {
+                        // 先显示占位符
+                        item.innerHTML = `
+                            <div class="report-image-thumb">
+                                <div style="color: var(--text-muted);">加载中...</div>
+                            </div>
+                            <div class="report-image-filename" contenteditable="true" title="${file.name}">${file.name}</div>
+                        `;
+                        container.appendChild(item);
+
                         // 读取图片
                         const reader = new FileReader();
                         reader.onload = (e) => {
@@ -4636,19 +4825,9 @@
                             `;
                         };
                         reader.readAsDataURL(file);
-
-                        // 先显示占位符
-                        item.innerHTML = `
-                            <div class="report-image-thumb">
-                                <div style="color: var(--text-muted);">加载中...</div>
-                            </div>
-                            <div class="report-image-filename" contenteditable="true" title="${file.name}">${file.name}</div>
-                        `;
                     }
                 }
-
-                container.appendChild(item);
-            });
+            }
         }
 
         // 关闭报告
