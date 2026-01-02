@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backup files
+*_backup_*.html
+*.bak
+
+# Temporary files
+*.tmp
+*.temp
+
+# Node modules (if you add build tools later)
+node_modules/

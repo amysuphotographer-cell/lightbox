@@ -1,0 +1,5082 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Gallery Viewer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            /* 莫兰蒂粉紫蓝色系 - 低饱和度、柔和优雅 */
+            --primary-purple: #9B8FA5;
+            --deep-purple: #7B6D87;
+            --deeper-purple: #6A5F74;
+            --light-purple: #C9B5D0;
+            --ultra-light-purple: #E8E3EA;
+            --purple-glow: rgba(155, 143, 165, 0.15);
+
+            /* 莫兰蒂功能性颜色 - 绿黄粉配色 */
+            --color-like: #A8BFA8;
+            --color-like-light: #C4D9C4;
+            --color-neutral: #D4C078;
+            --color-neutral-light: #E8D89A;
+            --color-dislike: #D4A5B5;
+            --color-dislike-light: #E5C4D0;
+            --color-blue: #8BA4B5;
+            --color-blue-light: #A5BED0;
+            --color-rose: #C9A5B5;
+            --color-rose-light: #D9BDCA;
+            --color-gray: #9B8FA5;
+            --color-gray-light: #B5A9BA;
+
+            /* 浅色背景 - 莫兰蒂灰紫调 */
+            --bg-primary: #F5F2F4;
+            --bg-secondary: #ECE8ED;
+            --bg-card: #FDFCFD;
+
+            /* 深色文字 */
+            --text-primary: #4A4550;
+            --text-secondary: #6D6574;
+            --text-muted: #9B8FA5;
+            --text-title: #2D1B3D;
+
+            /* 柔和边框和阴影 */
+            --border-color: rgba(155, 143, 165, 0.2);
+            --shadow-lg: 0 20px 60px rgba(123, 109, 135, 0.15);
+            --shadow-md: 0 8px 24px rgba(155, 143, 165, 0.12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Manrope', -apple-system, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--ultra-light-purple) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(201, 181, 208, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-20%, 20%); }
+        }
+
+        .container {
+            max-width: 1920px;
+            margin: 0 auto;
+            padding: 20px 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text-title) 0%, var(--deep-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+        }
+
+        .controls {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+            box-shadow: var(--shadow-md);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .control-group {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-btn, .load-btn {
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(155, 143, 165, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .file-upload-btn::before, .load-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .file-upload-btn:hover::before, .load-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .file-upload-btn:hover, .load-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(155, 143, 165, 0.4);
+        }
+
+        .file-upload-btn:active, .load-btn:active {
+            transform: translateY(0);
+        }
+
+        input[type="number"] {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 1rem;
+            width: 100px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 4px var(--purple-glow);
+        }
+
+        .stats-panel {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 40px;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+            box-shadow: var(--shadow-md);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            background: var(--bg-primary);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .stat-item:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary-purple);
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        /* 预览悬浮框 */
+        .preview-tooltip {
+            display: none;
+            position: fixed;
+            background: var(--bg-secondary);
+            border: 2px solid var(--primary-purple);
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 600px;
+            max-height: 500px;
+            overflow-y: auto;
+            box-shadow: var(--shadow-lg);
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+            animation: tooltipFadeIn 0.2s ease;
+        }
+
+        @keyframes tooltipFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .preview-tooltip.active {
+            display: block;
+        }
+
+        .preview-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            text-align: center;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+        }
+
+        .preview-image-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            transition: all 0.3s ease;
+            background: var(--bg-primary);
+        }
+
+        .preview-image-item:hover {
+            transform: scale(1.05);
+            border-color: var(--primary-purple);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+
+        .preview-image-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .preview-image-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+            color: white;
+            font-size: 0.65rem;
+            padding: 4px 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .preview-empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 40px 20px;
+            font-size: 0.95rem;
+        }
+
+        /* 滚动条样式 */
+        .preview-tooltip::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .preview-tooltip::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+            border-radius: 4px;
+        }
+
+        .preview-tooltip::-webkit-scrollbar-thumb {
+            background: var(--primary-purple);
+            border-radius: 4px;
+        }
+
+        .preview-tooltip::-webkit-scrollbar-thumb:hover {
+            background: var(--light-purple);
+        }
+
+        .stat-percentage {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .stat-item.like .stat-percentage {
+            background: linear-gradient(135deg, var(--color-like) 0%, var(--color-like-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-item.neutral .stat-percentage {
+            background: linear-gradient(135deg, var(--color-neutral) 0%, var(--color-neutral-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-item.dislike .stat-percentage {
+            background: linear-gradient(135deg, var(--color-dislike) 0%, var(--color-dislike-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 600;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .image-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: scaleIn 0.6s ease-out both;
+            position: relative;
+        }
+
+        .image-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-purple);
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .image-card:nth-child(1) { animation-delay: 0.1s; }
+        .image-card:nth-child(2) { animation-delay: 0.2s; }
+        .image-card:nth-child(3) { animation-delay: 0.3s; }
+        .image-card:nth-child(4) { animation-delay: 0.4s; }
+        .image-card:nth-child(5) { animation-delay: 0.5s; }
+        .image-card:nth-child(6) { animation-delay: 0.6s; }
+
+        .image-container {
+            width: 100%;
+            height: 550px;
+            overflow: hidden;
+            position: relative;
+            background: var(--bg-primary);
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .image-card:hover .image-container img {
+            transform: scale(1.05);
+        }
+
+        .image-name {
+            padding: 8px 10px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-align: center;
+            font-weight: 500;
+            border-top: 1px solid var(--border-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+        }
+
+        .folder-tag {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            z-index: 5;
+            box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+            backdrop-filter: blur(10px);
+            max-width: calc(100% - 80px);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .folder-list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .folder-list-item:hover {
+            border-color: var(--primary-purple);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .folder-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .folder-order {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            color: white;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .folder-name {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .folder-count {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-left: 8px;
+        }
+
+        .folder-remove-btn {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .folder-star-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            transition: all 0.3s ease;
+            line-height: 1;
+        }
+
+        .folder-star-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .folder-star-btn.active {
+            color: var(--light-purple);
+            filter: drop-shadow(0 0 8px var(--purple-glow));
+        }
+
+        .folder-badge {
+            display: inline-block;
+            margin-right: 6px;
+            font-size: 1rem;
+        }
+
+        .toggle-rating-btn {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .toggle-rating-btn:hover {
+            border-color: var(--primary-purple);
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(109, 40, 217, 0.1) 100%);
+        }
+
+        .toggle-rating-btn.active {
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            color: white;
+            border-color: var(--primary-purple);
+        }
+
+        .folder-remove-btn:hover {
+            background: linear-gradient(135deg, var(--deep-purple) 0%, var(--deeper-purple) 100%);
+            border-color: var(--deep-purple);
+            color: white;
+        }
+
+        /* 子文件夹选择模态框 */
+        .folder-select-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10000;
+            overflow-y: auto;
+        }
+
+        .folder-select-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .folder-select-container {
+            max-width: 700px;
+            width: 90%;
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            border: 2px solid var(--primary-purple);
+            box-shadow: var(--shadow-lg);
+            padding: 40px;
+        }
+
+        .folder-select-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .folder-select-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .folder-select-subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .folder-select-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 30px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .folder-select-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .folder-select-list::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+            border-radius: 4px;
+        }
+
+        .folder-select-list::-webkit-scrollbar-thumb {
+            background: var(--primary-purple);
+            border-radius: 4px;
+        }
+
+        .folder-select-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .folder-select-item:hover {
+            border-color: var(--primary-purple);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .folder-select-item.selected {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(109, 40, 217, 0.2) 100%);
+            border-color: var(--primary-purple);
+        }
+
+        .folder-select-checkbox {
+            width: 24px;
+            height: 24px;
+            margin-right: 16px;
+            cursor: pointer;
+            accent-color: var(--primary-purple);
+        }
+
+        .folder-select-info {
+            flex: 1;
+        }
+
+        .folder-select-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .folder-select-count {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .folder-select-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .folder-select-btn {
+            padding: 12px 32px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .folder-select-btn-primary {
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            color: white;
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+        }
+
+        .folder-select-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(139, 92, 246, 0.6);
+        }
+
+        .folder-select-btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .folder-select-btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .folder-select-btn-secondary:hover {
+            border-color: var(--primary-purple);
+            background: var(--bg-primary);
+        }
+
+        .folder-select-all {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: var(--bg-card);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
+        .folder-select-all label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .rating-bar {
+            display: flex;
+            gap: 6px;
+            padding: 8px;
+            justify-content: center;
+            background: linear-gradient(180deg, transparent 0%, rgba(15, 10, 31, 0.6) 100%);
+        }
+
+        .rating-btn {
+            background: var(--bg-primary);
+            border: 2px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 600;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .rating-btn:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary-purple);
+            color: var(--text-primary);
+        }
+
+        .rating-btn.active {
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            border-color: var(--primary-purple);
+            color: white;
+            box-shadow: 0 4px 16px rgba(155, 143, 165, 0.35);
+        }
+
+        .rating-btn.active.like {
+            background: linear-gradient(135deg, var(--color-like) 0%, var(--color-like-light) 100%);
+            border-color: var(--color-like);
+        }
+
+        .rating-btn.active.neutral {
+            background: linear-gradient(135deg, var(--color-neutral) 0%, var(--color-neutral-light) 100%);
+            border-color: var(--color-neutral);
+        }
+
+        .rating-btn.active.dislike {
+            background: linear-gradient(135deg, var(--color-dislike) 0%, var(--color-dislike-light) 100%);
+            border-color: var(--color-dislike);
+        }
+
+        .comment-box {
+            padding: 8px 12px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .comment-input {
+            width: 100%;
+            padding: 8px 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            font-family: 'Manrope', -apple-system, sans-serif;
+            resize: vertical;
+            min-height: 36px;
+            transition: all 0.3s ease;
+        }
+
+        .comment-input:focus {
+            outline: none;
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 3px var(--purple-glow);
+        }
+
+        .comment-input::placeholder {
+            color: var(--text-muted);
+            opacity: 0.6;
+        }
+
+        /* 画笔工具栏 */
+        .draw-toolbar {
+            position: fixed;
+            top: 90px;
+            right: 30px;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 10002;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(10px);
+        }
+
+        .draw-toolbar.active {
+            display: flex;
+        }
+
+        .draw-tool-btn {
+            width: 44px;
+            height: 44px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .draw-tool-btn:hover {
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            border-color: var(--primary-purple);
+            transform: scale(1.05);
+        }
+
+        .draw-tool-btn.active {
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            border-color: var(--primary-purple);
+            color: white;
+        }
+
+        .color-picker {
+            width: 44px;
+            height: 44px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .draw-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: crosshair;
+            z-index: 10;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-state-text {
+            font-size: 1.3rem;
+            font-weight: 500;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 40px;
+        }
+
+        .pagination button {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 12px 28px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            border-color: var(--primary-purple);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            padding: 0 10px;
+        }
+
+        /* 图片查看器模态框 */
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            cursor: grab;
+            overflow: hidden;
+        }
+
+        .image-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .image-modal.dragging {
+            cursor: grabbing;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            position: relative;
+            max-width: 100%;
+            max-height: 100%;
+            transition: transform 0.3s ease;
+        }
+
+        .modal-content img {
+            width: auto;
+            height: auto;
+            max-width: 95vw;
+            max-height: 90vh;
+            object-fit: contain;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .modal-controls {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            background: var(--bg-secondary);
+            padding: 16px 24px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow-lg);
+            z-index: 10001;
+        }
+
+        .modal-btn {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-btn:hover {
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            border-color: var(--primary-purple);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+        }
+
+        .modal-close {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 10001;
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-close:hover {
+            background: linear-gradient(135deg, var(--deep-purple) 0%, var(--deeper-purple) 100%);
+            border-color: var(--deep-purple);
+            transform: scale(1.1);
+        }
+
+        .zoom-info {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: var(--bg-secondary);
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            z-index: 10001;
+        }
+
+        /* 对比功能 */
+        .compare-checkbox {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            z-index: 10;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .compare-checkbox-label {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 28px;
+            height: 28px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 9;
+            opacity: 1;
+            backdrop-filter: blur(10px);
+        }
+
+        .compare-checkbox:checked + .compare-checkbox-label {
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            border-color: var(--primary-purple);
+            opacity: 1;
+        }
+
+        .compare-checkbox:checked + .compare-checkbox-label::after {
+            content: '✓';
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .compare-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border-top: 2px solid var(--primary-purple);
+            padding: 16px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            z-index: 9998;
+            box-shadow: 0 -4px 20px rgba(139, 92, 246, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .compare-bar.active {
+            display: flex;
+        }
+
+        .compare-info {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .compare-btn {
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+        }
+
+        .compare-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(139, 92, 246, 0.6);
+        }
+
+        .compare-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .clear-compare-btn {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .clear-compare-btn:hover {
+            background: linear-gradient(135deg, var(--deep-purple) 0%, var(--deeper-purple) 100%);
+            border-color: var(--deep-purple);
+        }
+
+        /* 对比模态框 */
+        .compare-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            overflow: hidden;
+        }
+
+        .compare-modal.active {
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .compare-header {
+            background: var(--bg-secondary);
+            padding: 12px 20px;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .compare-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .compare-mode-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .compare-mode-indicator.sync-mode {
+            border-color: var(--primary-purple);
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(109, 40, 217, 0.2) 100%);
+        }
+
+        .compare-mode-indicator.individual-mode {
+            border-color: var(--light-purple);
+            background: linear-gradient(135deg, rgba(201, 181, 208, 0.2) 0%, rgba(155, 143, 165, 0.2) 100%);
+        }
+
+        .compare-mode-icon {
+            font-size: 1.2rem;
+        }
+
+        .compare-image-wrapper.focused {
+            outline: 3px solid var(--light-purple);
+            outline-offset: -3px;
+            z-index: 1;
+        }
+
+        .compare-close {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 1.3rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .compare-close:hover {
+            background: linear-gradient(135deg, var(--deep-purple) 0%, var(--deeper-purple) 100%);
+            border-color: var(--deep-purple);
+            transform: scale(1.1);
+        }
+
+        .compare-content {
+            flex: 1;
+            display: grid;
+            gap: 1px;
+            background: rgba(139, 92, 246, 0.2);
+            overflow: hidden;
+        }
+
+        .compare-content.cols-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .compare-content.cols-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .compare-content.cols-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .compare-image-wrapper {
+            position: relative;
+            background: var(--bg-primary);
+            overflow: hidden;
+            cursor: grab;
+        }
+
+        .compare-image-wrapper.dragging {
+            cursor: grabbing;
+        }
+
+        .compare-image-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+        }
+
+        .compare-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        .compare-image-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+            color: white;
+            padding: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .compare-folder-tag {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.5);
+            backdrop-filter: blur(10px);
+            max-width: calc(100% - 180px);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            letter-spacing: 0.05em;
+        }
+
+        .compare-image-controls {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .compare-control-btn {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .compare-control-btn:hover {
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            border-color: var(--primary-purple);
+            transform: scale(1.1);
+        }
+
+        .compare-zoom-info {
+            position: absolute;
+            bottom: 60px;
+            left: 12px;
+            background: var(--bg-secondary);
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.85rem;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        /* 报告模态框 */
+        .report-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            overflow-y: auto;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .report-modal.active {
+            display: block;
+        }
+
+        .report-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 40px;
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            border: 2px solid var(--primary-purple);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .report-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .report-folder-name {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--light-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+        }
+
+        .report-subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .report-buttons-wrapper {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 1200px;
+            width: 100%;
+            padding: 0 40px;
+            pointer-events: none;
+            z-index: 10001;
+        }
+
+        .report-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .report-close-btn {
+            width: 50px;
+            height: 50px;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .report-close-btn:hover {
+            background: linear-gradient(135deg, var(--deep-purple) 0%, var(--deeper-purple) 100%);
+            border-color: var(--deep-purple);
+            transform: scale(1.1);
+        }
+
+        .report-print-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+        }
+
+        .report-print-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(139, 92, 246, 0.6);
+        }
+
+        .report-export-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+        }
+
+        .report-export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(139, 92, 246, 0.6);
+        }
+
+        .report-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .report-stat-card {
+            background: var(--bg-primary);
+            padding: 16px 24px;
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .report-stat-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary-purple);
+            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .report-stat-card.like {
+            border-color: var(--color-like);
+        }
+
+        .report-stat-card.neutral {
+            border-color: var(--color-neutral);
+        }
+
+        .report-stat-card.dislike {
+            border-color: var(--color-dislike);
+        }
+
+        .report-stat-percentage {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .report-stat-card.like .report-stat-percentage {
+            background: linear-gradient(135deg, var(--color-like) 0%, var(--color-like-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .report-stat-card.neutral .report-stat-percentage {
+            background: linear-gradient(135deg, var(--color-neutral) 0%, var(--color-neutral-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .report-stat-card.dislike .report-stat-percentage {
+            background: linear-gradient(135deg, var(--color-dislike) 0%, var(--color-dislike-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .report-stat-value {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .report-stat-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 600;
+        }
+
+        .report-section {
+            margin-bottom: 40px;
+        }
+
+        .report-section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .report-section-icon {
+            font-size: 2rem;
+        }
+
+        .report-image-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            gap: 24px;
+        }
+
+        .report-image-item {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .report-image-item:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary-purple);
+            box-shadow: 0 6px 16px rgba(139, 92, 246, 0.3);
+        }
+
+        .report-image-thumb {
+            width: 100%;
+            height: 450px;
+            background: var(--bg-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .report-image-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .report-image-thumb img:hover {
+            transform: scale(1.05);
+        }
+
+        .report-image-replace-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid white;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .report-image-thumb:hover .report-image-replace-btn {
+            display: flex;
+        }
+
+        .report-image-replace-btn:hover {
+            background: var(--primary-purple);
+            transform: scale(1.1);
+        }
+
+        .report-image-filename {
+            padding: 12px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 500;
+        }
+
+        /* 可编辑文本样式 */
+        [contenteditable="true"] {
+            outline: none;
+            cursor: text;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        [contenteditable="true"]:hover {
+            background: rgba(155, 143, 165, 0.1);
+        }
+
+        [contenteditable="true"]:focus {
+            background: rgba(155, 143, 165, 0.15);
+            box-shadow: 0 0 0 2px var(--primary-purple);
+        }
+
+        .report-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        /* 帮助按钮容器 */
+        .help-btn-wrapper {
+            display: flex;
+            justify-content: flex-end;
+            padding: 30px 40px 60px;
+            margin-top: 40px;
+        }
+
+        /* 帮助按钮 */
+        .help-btn {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            border: 3px solid var(--bg-card);
+            border-radius: 50%;
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(123, 109, 135, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .help-btn:hover {
+            transform: scale(1.1) rotate(15deg);
+            box-shadow: 0 12px 32px rgba(123, 109, 135, 0.6);
+        }
+
+        /* 帮助模态框 */
+        .help-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            overflow-y: auto;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .help-modal.active {
+            display: block;
+        }
+
+        .help-container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 60px;
+            background: var(--bg-secondary);
+            border-radius: 20px;
+            border: 2px solid var(--primary-purple);
+            box-shadow: var(--shadow-lg);
+            position: relative;
+        }
+
+        .help-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .help-close:hover {
+            background: linear-gradient(135deg, var(--deep-purple) 0%, var(--deeper-purple) 100%);
+            border-color: var(--deep-purple);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .help-title {
+            text-align: center;
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--light-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 50px;
+        }
+
+        /* 思维导图样式 */
+        .mindmap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .mindmap-center {
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
+            color: white;
+            padding: 30px 50px;
+            border-radius: 20px;
+            font-size: 2rem;
+            font-weight: 700;
+            box-shadow: 0 12px 40px rgba(123, 109, 135, 0.4);
+            text-align: center;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .mindmap-branches {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            width: 100%;
+        }
+
+        .mindmap-branch {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .mindmap-branch:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(155, 143, 165, 0.3);
+            border-color: var(--primary-purple);
+        }
+
+        .mindmap-branch-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .mindmap-branch-icon {
+            font-size: 2rem;
+            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--light-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .mindmap-branch-items {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .mindmap-branch-items li {
+            padding: 12px 0;
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .mindmap-branch-items li:last-child {
+            border-bottom: none;
+        }
+
+        .mindmap-branch-items li::before {
+            content: '▸';
+            color: var(--primary-purple);
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .mindmap-branch-items li strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .report-buttons-wrapper {
+                display: none;
+            }
+
+            .report-container {
+                background: white;
+                color: black;
+                border: none;
+                box-shadow: none;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .gallery {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+
+            .image-container {
+                height: 450px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .gallery {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .image-container {
+                height: 350px;
+            }
+
+            .control-group {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Image Gallery</h1>
+            <p class="subtitle">本地图片评分查看器</p>
+        </header>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>选择图片文件夹：</label>
+                <input type="file" id="folderInput" webkitdirectory directory multiple>
+                <button class="file-upload-btn" onclick="document.getElementById('folderInput').click()" style="background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-blue-light) 100%);">
+                    📁 添加文件夹
+                </button>
+                <button class="file-upload-btn" id="quickAddBtn" onclick="quickAddMode()" style="background: linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%);">
+                    ⚡ 快速连续添加
+                </button>
+                <button class="load-btn" onclick="loadImages()" style="background: linear-gradient(135deg, var(--light-purple) 0%, var(--ultra-light-purple) 100%);">🖼️ 加载全部图片</button>
+                <button class="load-btn" onclick="clearFolders()" style="background: linear-gradient(135deg, var(--color-gray) 0%, var(--color-gray-light) 100%);">
+                    🗑️ 清空文件夹
+                </button>
+            </div>
+            <div class="control-group" style="margin-top: -10px; padding-top: 0;">
+                <span class="subtitle" style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.6;">
+                    💡 <strong>单文件夹</strong>：逐张浏览评价 | <strong>多文件夹</strong>：自动对比模式（同时显示每个文件夹的第N张图）<br>
+                    <strong>添加方式</strong>：① 逐个添加 ② 选父文件夹批量添加子文件夹 ③ 快速连续添加（自动弹窗）
+                </span>
+            </div>
+
+            <div class="control-group" id="folderList" style="display: none; width: 100%; flex-direction: column; align-items: stretch;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <label style="margin: 0;">已添加的文件夹（按顺序）：</label>
+                    <button class="toggle-rating-btn" id="toggleRatingBtn" onclick="toggleRatingMode()" style="display: none;">
+                        <span id="toggleRatingIcon">⭐</span>
+                        <span id="toggleRatingText">单一评分</span>
+                    </button>
+                </div>
+                <div id="folderListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- 文件夹列表将在这里动态生成 -->
+                </div>
+            </div>
+
+        </div>
+
+        <div class="stats-panel" id="statsPanel" style="display: none;">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalImages">0</div>
+                    <div class="stat-label">总图片数</div>
+                </div>
+                <div class="stat-item like" onmouseenter="showPreview(event, 'like')" onmouseleave="hidePreview()">
+                    <div class="stat-percentage" id="likedPercent">0%</div>
+                    <div class="stat-value" id="likedCount">0</div>
+                    <div class="stat-label">😍 喜欢</div>
+                </div>
+                <div class="stat-item neutral" onmouseenter="showPreview(event, 'neutral')" onmouseleave="hidePreview()">
+                    <div class="stat-percentage" id="neutralPercent">0%</div>
+                    <div class="stat-value" id="neutralCount">0</div>
+                    <div class="stat-label">😐 一般</div>
+                </div>
+                <div class="stat-item dislike" onmouseenter="showPreview(event, 'dislike')" onmouseleave="hidePreview()">
+                    <div class="stat-percentage" id="dislikedPercent">0%</div>
+                    <div class="stat-value" id="dislikedCount">0</div>
+                    <div class="stat-label">😢 不喜欢</div>
+                </div>
+                <div class="stat-item" onmouseenter="showPreview(event, 'unrated')" onmouseleave="hidePreview()">
+                    <div class="stat-percentage" id="unratedPercent">0%</div>
+                    <div class="stat-value" id="unratedCount">0</div>
+                    <div class="stat-label">⭕ 未评分</div>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="load-btn" onclick="generateReport()" style="padding: 16px 40px; font-size: 1.1rem;">
+                    📊 生成评分报告
+                </button>
+            </div>
+        </div>
+
+        <div class="gallery" id="gallery">
+            <div class="empty-state">
+                <div class="empty-state-icon">🖼️</div>
+                <div class="empty-state-text">选择文件夹并加载图片开始评分</div>
+            </div>
+        </div>
+
+        <div class="pagination" id="pagination" style="display: none;">
+            <button onclick="prevPage()">← 上一页</button>
+            <div class="page-info">
+                <span id="pageInfo">第 1 页</span>
+            </div>
+            <button onclick="nextPage()">下一页 →</button>
+        </div>
+    </div>
+
+    <!-- 图片查看器模态框 -->
+    <div class="image-modal" id="imageModal">
+        <div class="modal-close" onclick="closeModal()">✕</div>
+        <div class="zoom-info" id="zoomInfo">100%</div>
+        <div class="modal-content" id="modalContent">
+            <img id="modalImage" src="" alt="">
+            <canvas id="drawCanvas" class="draw-canvas"></canvas>
+        </div>
+        <div class="modal-controls">
+            <button class="modal-btn" onclick="zoomIn()">🔍 放大</button>
+            <button class="modal-btn" onclick="zoomOut()">🔍 缩小</button>
+            <button class="modal-btn" onclick="resetZoom()">↺ 重置</button>
+            <button class="modal-btn" onclick="toggleDrawMode()" id="drawModeBtn" style="background: linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%);">✏️ 标记细节</button>
+        </div>
+    </div>
+
+    <!-- 画笔工具栏 -->
+    <div class="draw-toolbar" id="drawToolbar">
+        <button class="draw-tool-btn active" onclick="setDrawTool('pen')" title="画笔">✏️</button>
+        <button class="draw-tool-btn" onclick="setDrawTool('eraser')" title="橡皮擦">🧹</button>
+        <input type="color" class="color-picker" id="drawColor" value="#ef4444" title="颜色">
+        <button class="draw-tool-btn" onclick="clearDrawing()" title="清除全部">🗑️</button>
+        <button class="draw-tool-btn" onclick="saveDrawing()" title="保存标记">💾</button>
+    </div>
+
+    <!-- 预览悬浮框 -->
+    <div class="preview-tooltip" id="previewTooltip">
+        <div class="preview-title" id="previewTitle"></div>
+        <div class="preview-grid" id="previewGrid"></div>
+    </div>
+
+    <!-- 对比栏 -->
+    <div class="compare-bar" id="compareBar">
+        <div class="compare-info">
+            已选择 <span id="compareCount">0</span> 张图片
+        </div>
+        <button class="compare-btn" id="compareButton" onclick="openCompareModal()" disabled>
+            🔍 开始对比
+        </button>
+        <button class="compare-btn clear-compare-btn" onclick="clearCompareSelection()">
+            ✕ 清除选择
+        </button>
+    </div>
+
+    <!-- 对比模态框 -->
+    <div class="compare-modal" id="compareModal">
+        <div class="compare-header">
+            <div class="compare-title">图片对比</div>
+            <div class="compare-mode-indicator sync-mode" id="compareModeIndicator">
+                <span class="compare-mode-icon">🔗</span>
+                <span id="compareModeText">同步缩放模式</span>
+            </div>
+            <div class="compare-close" onclick="closeCompareModal()">✕</div>
+        </div>
+        <div class="compare-content" id="compareContent">
+            <!-- 对比图片将在这里动态生成 -->
+        </div>
+    </div>
+
+    <!-- 报告模态框 -->
+    <div class="report-modal" id="reportModal">
+        <div class="report-buttons-wrapper">
+            <div class="report-buttons">
+                <button class="report-print-btn" onclick="window.print()">🖨️ 打印</button>
+                <button class="report-export-btn" onclick="exportFileList()">📂 导出文件列表</button>
+                <button class="report-close-btn" onclick="closeReport()">✕</button>
+            </div>
+        </div>
+        <div class="report-container" id="reportContainer">
+            <!-- 报告内容将在这里动态生成 -->
+        </div>
+    </div>
+
+    <!-- 子文件夹选择模态框 -->
+    <div class="folder-select-modal" id="folderSelectModal">
+        <div class="folder-select-container">
+            <div class="folder-select-header">
+                <div class="folder-select-title">选择要添加的文件夹</div>
+                <div class="folder-select-subtitle">已检测到多个子文件夹，请勾选要添加的文件夹</div>
+            </div>
+
+            <div class="folder-select-all">
+                <label>
+                    <input type="checkbox" id="selectAllFolders" onchange="toggleSelectAllFolders(this.checked)">
+                    全选/取消全选
+                </label>
+            </div>
+
+            <div class="folder-select-list" id="folderSelectList">
+                <!-- 文件夹列表将在这里动态生成 -->
+            </div>
+
+            <div class="folder-select-actions">
+                <button class="folder-select-btn folder-select-btn-secondary" onclick="closeFolderSelectModal()">
+                    取消
+                </button>
+                <button class="folder-select-btn folder-select-btn-primary" id="confirmFolderSelectBtn" onclick="confirmFolderSelection()">
+                    添加选中的文件夹
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 帮助按钮 -->
+    <div class="help-btn-wrapper">
+        <div class="help-btn" onclick="openHelp()" title="使用说明">?</div>
+    </div>
+
+    <!-- 帮助模态框 -->
+    <div class="help-modal" id="helpModal">
+        <div class="help-container">
+            <div class="help-close" onclick="closeHelp()">✕</div>
+            <div class="help-title">📖 使用说明</div>
+
+            <div class="mindmap">
+                <!-- 中心节点 -->
+                <div class="mindmap-center">
+                    Image Gallery Viewer<br>
+                    <span style="font-size: 1.2rem; opacity: 0.9;">图片评分与对比工具</span>
+                </div>
+
+                <!-- 分支节点 -->
+                <div class="mindmap-branches">
+                    <!-- 图片加载 -->
+                    <div class="mindmap-branch">
+                        <div class="mindmap-branch-title">
+                            <span class="mindmap-branch-icon">📁</span>
+                            图片加载
+                        </div>
+                        <ul class="mindmap-branch-items">
+                            <li><strong>单个文件夹：</strong>点击"选择文件夹"按钮，选择包含图片的文件夹</li>
+                            <li><strong>多个文件夹：</strong>使用"添加更多文件夹"功能，可加载多个文件夹进行对比</li>
+                            <li><strong>支持格式：</strong>JPG, PNG, GIF, WEBP, BMP 以及 RAW 格式 (CR2, NEF, ARW等)</li>
+                        </ul>
+                    </div>
+
+                    <!-- 评分系统 -->
+                    <div class="mindmap-branch">
+                        <div class="mindmap-branch-title">
+                            <span class="mindmap-branch-icon">⭐</span>
+                            评分系统
+                        </div>
+                        <ul class="mindmap-branch-items">
+                            <li><strong>三级评分：</strong>😍 喜欢、😐 一般、😢 不喜欢</li>
+                            <li><strong>添加评论：</strong>点击评分按钮后可输入文字评价</li>
+                            <li><strong>多文件夹模式：</strong>同一张图片在不同文件夹中可有不同评分</li>
+                            <li><strong>统计实时：</strong>顶部卡片实时显示评分统计和百分比</li>
+                        </ul>
+                    </div>
+
+                    <!-- 对比模式 -->
+                    <div class="mindmap-branch">
+                        <div class="mindmap-branch-title">
+                            <span class="mindmap-branch-icon">🔄</span>
+                            对比模式
+                        </div>
+                        <ul class="mindmap-branch-items">
+                            <li><strong>同名对比：</strong>点击图片名查看同名图片在所有文件夹中的版本</li>
+                            <li><strong>独立缩放：</strong>每个版本可独立放大、缩小、拖动查看细节</li>
+                            <li><strong>评分对比：</strong>并排展示各版本评分，便于比较</li>
+                            <li><strong>文件夹标识：</strong>每个版本标注所属文件夹名称</li>
+                        </ul>
+                    </div>
+
+                    <!-- 画笔标记 -->
+                    <div class="mindmap-branch">
+                        <div class="mindmap-branch-title">
+                            <span class="mindmap-branch-icon">✏️</span>
+                            画笔标记
+                        </div>
+                        <ul class="mindmap-branch-items">
+                            <li><strong>激活画笔：</strong>点击对比模式中的 ✏️ 按钮自动进入标记模式</li>
+                            <li><strong>工具选择：</strong>提供画笔、橡皮擦、颜色选择器等工具</li>
+                            <li><strong>保存标记：</strong>点击 💾 保存标记，下次查看时自动加载</li>
+                            <li><strong>清除标记：</strong>点击 🗑️ 清除当前图片的所有标记</li>
+                        </ul>
+                    </div>
+
+                    <!-- 生成报告 -->
+                    <div class="mindmap-branch">
+                        <div class="mindmap-branch-title">
+                            <span class="mindmap-branch-icon">📊</span>
+                            生成报告
+                        </div>
+                        <ul class="mindmap-branch-items">
+                            <li><strong>自动归纳：</strong>相似的评论会自动分组显示</li>
+                            <li><strong>Goodcase：</strong>展示所有"喜欢"的评价和图片</li>
+                            <li><strong>Badcase：</strong>展示"一般"和"不喜欢"的评价和图片</li>
+                            <li><strong>可编辑：</strong>报告中的标题、评论、图片文件名都可直接编辑</li>
+                            <li><strong>替换图片：</strong>悬停在图片上点击 🔄 按钮可替换图片</li>
+                        </ul>
+                    </div>
+
+                    <!-- 导出功能 -->
+                    <div class="mindmap-branch">
+                        <div class="mindmap-branch-title">
+                            <span class="mindmap-branch-icon">💾</span>
+                            导出功能
+                        </div>
+                        <ul class="mindmap-branch-items">
+                            <li><strong>导出报告：</strong>点击报告页的"导出文件列表"生成分类清单</li>
+                            <li><strong>TXT格式：</strong>便于阅读的文本格式，包含完整评分信息</li>
+                            <li><strong>JSON格式：</strong>结构化数据，便于程序处理</li>
+                            <li><strong>持久化：</strong>所有评分和标记自动保存到浏览器本地</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 浏览器兼容性检测
+        (function checkBrowserCompatibility() {
+            const features = {
+                fileReader: typeof FileReader !== 'undefined',
+                localStorage: typeof localStorage !== 'undefined',
+                grid: CSS.supports('display', 'grid'),
+                flexbox: CSS.supports('display', 'flex')
+            };
+
+            const unsupported = Object.keys(features).filter(key => !features[key]);
+
+            if (unsupported.length > 0) {
+                console.warn('某些功能在当前浏览器中可能不支持:', unsupported);
+            }
+
+            // 检查文件夹选择支持
+            const input = document.createElement('input');
+            input.type = 'file';
+            const supportsDirectory = 'webkitdirectory' in input || 'directory' in input;
+
+            if (!supportsDirectory) {
+                console.warn('当前浏览器可能不支持文件夹选择功能，建议使用最新版本的 Chrome、Edge、Firefox 或 Safari');
+            }
+        })();
+
+        let allImages = [];
+        let currentPage = 0;
+        let imagesPerPage = 3;
+        let ratings = {}; // 多维评分结构: { "filename.jpg": { "folder1": "like", "folder2": "dislike" } }
+        let folders = []; // 存储所有文件夹信息 [{name: 'folder1', images: [...], files: [...]}]
+        let currentFolderName = ''; // 当前文件夹名称（用于报告）
+        let pendingFolders = []; // 待选择的文件夹列表
+
+        // 画笔功能变量
+        let isDrawMode = false;
+        let drawTool = 'pen';
+        let drawColor = '#ef4444';
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let drawings = {}; // 存储每张图片的标记数据: { "imageKey": [...paths] }
+        let currentImageKey = '';  // 当前显示的图片key
+        let isQuickAddMode = false; // 是否处于快速连续添加模式
+        let ratingMode = 'single'; // 评分模式: 'single' 单一评分, 'multi' 多维评分
+        let mainFolderIndex = -1; // 单一评分模式下的主文件夹索引（-1表示第一个文件夹）
+
+        // 图片查看器状态
+        let currentZoom = 1;
+        let currentX = 0;
+        let currentY = 0;
+        let isDragging = false;
+        let startX = 0;
+        let startY = 0;
+
+        // 对比功能状态
+        let compareSelection = new Set(); // 存储选中的图片的唯一标识
+        let compareImages = []; // 存储选中的图片对象
+        let compareStates = {}; // 存储每张对比图片的缩放和位置状态
+        let compareZoomMode = 'sync'; // 缩放模式：'sync' 同步, 'individual' 独立
+        let compareFocusedImage = null; // 当前聚焦的图片key
+        let compareHoverTimer = null; // 悬停计时器
+        let compareContentWheelHandler = null; // 对比内容区域的滚轮事件处理器
+
+        // RAW 文件扩展名列表
+        const RAW_EXTENSIONS = [
+            'cr2', 'cr3', 'nef', 'arw', 'dng', 'orf', 'rw2', 'pef', 'srw',
+            'raf', 'raw', 'rwl', 'mrw', 'nrw', 'x3f', 'erf', 'kdc', 'dcr', 'sr2'
+        ];
+
+        // 检查是否是图片文件（包括RAW格式）
+        function isImageFile(file) {
+            // 检查MIME类型
+            if (file.type.startsWith('image/')) {
+                return true;
+            }
+            // 检查文件扩展名（用于RAW格式）
+            const ext = file.name.split('.').pop().toLowerCase();
+            return RAW_EXTENSIONS.includes(ext);
+        }
+
+        // 检查是否是RAW文件
+        function isRawFile(file) {
+            const ext = file.name.split('.').pop().toLowerCase();
+            return RAW_EXTENSIONS.includes(ext);
+        }
+
+        // 从 localStorage 加载评分
+        function loadRatings() {
+            const saved = localStorage.getItem('imageRatings');
+            if (saved) {
+                const loadedRatings = JSON.parse(saved);
+
+                // 检查是否是旧版本数据格式（值是字符串而不是对象）
+                const firstKey = Object.keys(loadedRatings)[0];
+                if (firstKey && typeof loadedRatings[firstKey] === 'string') {
+                    // 迁移旧数据：将 {"img.jpg": "like"} 转换为 {"img.jpg": {"folder0": "like"}}
+                    const migratedRatings = {};
+                    for (const [key, value] of Object.entries(loadedRatings)) {
+                        migratedRatings[key] = { "默认文件夹": value };
+                    }
+                    ratings = migratedRatings;
+                    saveRatings(); // 保存迁移后的数据
+                } else {
+                    ratings = loadedRatings;
+                }
+            }
+        }
+
+        // 保存评分到 localStorage
+        function saveRatings() {
+            localStorage.setItem('imageRatings', JSON.stringify(ratings));
+        }
+
+        // 添加文件夹
+        document.getElementById('folderInput').addEventListener('change', function() {
+            const files = Array.from(this.files);
+
+            if (files.length === 0) {
+                return;
+            }
+
+            const imageFiles = files.filter(file => isImageFile(file));
+
+            if (imageFiles.length === 0) {
+                alert('所选文件夹中没有图片文件！');
+                this.value = ''; // 重置input
+                return;
+            }
+
+            // 分析文件路径，检测是否有子文件夹
+            const folderMap = new Map(); // key: 文件夹路径, value: {name, files, images}
+
+            imageFiles.forEach(file => {
+                if (file.webkitRelativePath) {
+                    const pathParts = file.webkitRelativePath.split('/');
+
+                    // 如果路径深度 > 2，说明有子文件夹
+                    if (pathParts.length > 2) {
+                        // 使用第二级路径作为文件夹名（即第一级子文件夹）
+                        const subFolderName = pathParts[1];
+                        const folderKey = `${pathParts[0]}/${subFolderName}`;
+
+                        if (!folderMap.has(folderKey)) {
+                            folderMap.set(folderKey, {
+                                name: subFolderName,
+                                fullPath: folderKey,
+                                files: [],
+                                images: []
+                            });
+                        }
+
+                        folderMap.get(folderKey).images.push(file);
+                    } else {
+                        // 没有子文件夹，直接使用根文件夹名
+                        const rootFolderName = pathParts[0] || '未命名文件夹';
+
+                        if (!folderMap.has(rootFolderName)) {
+                            folderMap.set(rootFolderName, {
+                                name: rootFolderName,
+                                fullPath: rootFolderName,
+                                files: [],
+                                images: []
+                            });
+                        }
+
+                        folderMap.get(rootFolderName).images.push(file);
+                    }
+                }
+            });
+
+            // 智能排序：优先数字，然后字母
+            const sortedFolders = Array.from(folderMap.values()).sort((a, b) => {
+                // 提取文件夹名开头的数字
+                const aNum = parseInt(a.name.match(/^\d+/));
+                const bNum = parseInt(b.name.match(/^\d+/));
+
+                // 如果两者都有数字前缀，按数字排序
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return aNum - bNum;
+                }
+
+                // 如果只有一个有数字前缀，有数字的排在前面
+                if (!isNaN(aNum)) return -1;
+                if (!isNaN(bNum)) return 1;
+
+                // 都没有数字前缀，按字母排序
+                return a.name.localeCompare(b.name, 'zh-CN');
+            });
+
+            // 检测到多个子文件夹时显示选择界面
+            if (sortedFolders.length > 1) {
+                pendingFolders = sortedFolders;
+                openFolderSelectModal();
+            } else {
+                // 只有一个文件夹，直接添加
+                const folder = sortedFolders[0];
+
+                // 检查是否已经添加过该文件夹
+                if (folders.some(f => f.name === folder.name)) {
+                    alert(`文件夹"${folder.name}"已经添加过了！`);
+
+                    // 快速添加模式下继续
+                    if (isQuickAddMode) {
+                        setTimeout(() => {
+                            document.getElementById('folderInput').click();
+                        }, 100);
+                    }
+                } else {
+                    folders.push({
+                        name: folder.name,
+                        fullPath: folder.fullPath,
+                        files: folder.files || files,
+                        images: folder.images
+                    });
+
+                    updateFolderList();
+                    console.log(`已添加文件夹: ${folder.name} (${folder.images.length} 张图片)`);
+
+                    // 快速添加模式下，自动弹出下一个文件夹选择
+                    if (isQuickAddMode) {
+                        setTimeout(() => {
+                            document.getElementById('folderInput').click();
+                        }, 100);
+                    }
+                }
+            }
+
+            // 重置input以便可以再次选择
+            this.value = '';
+        });
+
+        // 加载全部图片
+        function loadImages() {
+            if (folders.length === 0) {
+                alert('请先添加至少一个文件夹！');
+                return;
+            }
+
+            // 设置总文件夹名称用于报告
+            if (folders.length === 1) {
+                currentFolderName = folders[0].name;
+                // 单文件夹模式：顺序加载所有图片
+                allImages = [];
+                folders[0].images.forEach(file => {
+                    file.folderName = folders[0].name;
+                    allImages.push(file);
+                });
+            } else {
+                currentFolderName = `${folders.length}个文件夹对比`;
+                // 多文件夹模式：统计所有图片用于报告
+                allImages = [];
+                folders.forEach(folder => {
+                    folder.images.forEach(file => {
+                        file.folderName = folder.name;
+                        allImages.push(file);
+                    });
+                });
+            }
+
+            const rawCount = allImages.filter(file => isRawFile(file)).length;
+            if (rawCount > 0) {
+                console.log(`检测到 ${rawCount} 个 RAW 格式文件`);
+            }
+
+            currentPage = 0;
+
+            loadRatings();
+            updateStats();
+            displayImages();
+
+            document.getElementById('statsPanel').style.display = 'block';
+            document.getElementById('pagination').style.display = 'flex';
+        }
+
+        // 更新文件夹列表显示
+        function updateFolderList() {
+            const container = document.getElementById('folderListContainer');
+            const folderList = document.getElementById('folderList');
+            const toggleRatingBtn = document.getElementById('toggleRatingBtn');
+
+            if (folders.length === 0) {
+                folderList.style.display = 'none';
+                container.innerHTML = '';
+                toggleRatingBtn.style.display = 'none';
+                return;
+            }
+
+            folderList.style.display = 'flex';
+            container.innerHTML = '';
+
+            // 只在多文件夹模式下显示评分模式切换按钮
+            if (folders.length > 1) {
+                toggleRatingBtn.style.display = 'inline-flex';
+            } else {
+                toggleRatingBtn.style.display = 'none';
+            }
+
+            folders.forEach((folder, index) => {
+                const item = document.createElement('div');
+                item.className = 'folder-list-item';
+
+                // 单一评分模式下显示星标按钮
+                let starButton = '';
+                if (ratingMode === 'single' && folders.length > 1) {
+                    const starIcon = mainFolderIndex === index ? '⭐' : '☆';
+                    const starClass = mainFolderIndex === index ? 'active' : '';
+                    starButton = `
+                        <button class="folder-star-btn ${starClass}" onclick="toggleMainFolder(${index})" title="设为主文件夹（只评价此文件夹）">
+                            ${starIcon}
+                        </button>
+                    `;
+                }
+
+                // 多维评分模式下显示文件夹标记
+                let folderBadge = '';
+                if (ratingMode === 'multi' && folders.length > 1) {
+                    folderBadge = `<span class="folder-badge">📁</span>`;
+                }
+
+                item.innerHTML = `
+                    <div class="folder-info">
+                        <div class="folder-order">${index + 1}</div>
+                        <div>
+                            ${folderBadge}
+                            <span class="folder-name">${folder.name}</span>
+                            <span class="folder-count">(${folder.images.length} 张图片)</span>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        ${starButton}
+                        <button class="folder-remove-btn" onclick="removeFolder(${index})">移除</button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // 移除文件夹
+        function removeFolder(index) {
+            folders.splice(index, 1);
+
+            // 如果移除的是主文件夹，清除主文件夹设置
+            if (mainFolderIndex === index) {
+                mainFolderIndex = -1;
+                saveSettings();
+            } else if (mainFolderIndex > index) {
+                // 如果主文件夹在被移除文件夹之后，索引需要减1
+                mainFolderIndex--;
+                saveSettings();
+            }
+
+            updateFolderList();
+
+            // 如果移除后没有文件夹了，清空显示
+            if (folders.length === 0) {
+                allImages = [];
+                currentPage = 0;
+                document.getElementById('gallery').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🖼️</div>
+                        <div class="empty-state-text">选择文件夹并加载图片开始评分</div>
+                    </div>
+                `;
+                document.getElementById('statsPanel').style.display = 'none';
+                document.getElementById('pagination').style.display = 'none';
+            } else {
+                // 重新显示图片（应用新的评分显示逻辑）
+                displayImages();
+            }
+        }
+
+        // 切换主文件夹
+        function toggleMainFolder(index) {
+            if (mainFolderIndex === index) {
+                // 取消主文件夹设置
+                mainFolderIndex = -1;
+            } else {
+                // 设置为主文件夹
+                mainFolderIndex = index;
+            }
+            saveSettings();
+            updateFolderList();
+            displayImages(); // 重新显示图片以应用新的评分显示逻辑
+        }
+
+        // 切换评分模式
+        function toggleRatingMode() {
+            ratingMode = ratingMode === 'single' ? 'multi' : 'single';
+
+            // 如果切换到单一评分模式且没有设置主文件夹，默认选择第一个
+            if (ratingMode === 'single' && mainFolderIndex === -1 && folders.length > 0) {
+                mainFolderIndex = 0;
+            }
+
+            updateRatingModeButton();
+            updateFolderList();
+            saveSettings();
+            displayImages(); // 重新显示图片
+        }
+
+        // 更新评分模式按钮状态
+        function updateRatingModeButton() {
+            const btn = document.getElementById('toggleRatingBtn');
+            const icon = document.getElementById('toggleRatingIcon');
+            const text = document.getElementById('toggleRatingText');
+
+            if (!btn) return;
+
+            if (ratingMode === 'multi') {
+                btn.classList.add('active');
+                icon.textContent = '📊';
+                text.textContent = '多维评分';
+            } else {
+                btn.classList.remove('active');
+                icon.textContent = '⭐';
+                text.textContent = '单一评分';
+            }
+        }
+
+        // 保存设置到localStorage
+        function saveSettings() {
+            const settings = {
+                ratingMode: ratingMode,
+                mainFolderIndex: mainFolderIndex
+            };
+            localStorage.setItem('imageViewerSettings', JSON.stringify(settings));
+        }
+
+        // 从localStorage加载设置
+        function loadSettings() {
+            const saved = localStorage.getItem('imageViewerSettings');
+            if (saved) {
+                try {
+                    const settings = JSON.parse(saved);
+                    ratingMode = settings.ratingMode || 'single';
+                    mainFolderIndex = settings.mainFolderIndex !== undefined ? settings.mainFolderIndex : -1;
+
+                    // 更新模式按钮状态
+                    updateRatingModeButton();
+                } catch (e) {
+                    console.error('加载设置失败:', e);
+                }
+            }
+        }
+
+        // 清空所有文件夹
+        function clearFolders() {
+            if (folders.length === 0) {
+                return;
+            }
+
+            if (!confirm('确定要清空所有文件夹吗？')) {
+                return;
+            }
+
+            folders = [];
+            allImages = [];
+            currentPage = 0;
+
+            updateFolderList();
+
+            document.getElementById('gallery').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">🖼️</div>
+                    <div class="empty-state-text">选择文件夹并加载图片开始评分</div>
+                </div>
+            `;
+            document.getElementById('statsPanel').style.display = 'none';
+            document.getElementById('pagination').style.display = 'none';
+        }
+
+        // 显示当前页图片
+        function displayImages() {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+
+            if (folders.length === 1) {
+                // 单文件夹模式：每页显示3张
+                const imagesPerPage = 3;
+                const start = currentPage * imagesPerPage;
+                const end = start + imagesPerPage;
+                const currentImages = allImages.slice(start, end);
+
+                currentImages.forEach((file) => {
+                    if (isRawFile(file)) {
+                        const card = createImageCard(file, null, true);
+                        gallery.appendChild(card);
+                    } else {
+                        const imageKey = `${file.name}_${file.size}`;
+                        // 检查缓存
+                        if (imageCache[imageKey]) {
+                            const card = createImageCard(file, imageCache[imageKey], false);
+                            gallery.appendChild(card);
+                        } else {
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                // 保存到缓存
+                                imageCache[imageKey] = e.target.result;
+                                const card = createImageCard(file, e.target.result, false);
+                                gallery.appendChild(card);
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    }
+                });
+            } else {
+                // 多文件夹对比模式：每次显示每个文件夹的第currentPage张
+                folders.forEach((folder, folderIndex) => {
+                    const file = folder.images[currentPage];
+
+                    if (file) {
+                        if (isRawFile(file)) {
+                            const card = createImageCard(file, null, true, folderIndex);
+                            gallery.appendChild(card);
+                        } else {
+                            const imageKey = `${file.name}_${file.size}`;
+                            // 检查缓存
+                            if (imageCache[imageKey]) {
+                                const card = createImageCard(file, imageCache[imageKey], false, folderIndex);
+                                gallery.appendChild(card);
+                            } else {
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                    // 保存到缓存
+                                    imageCache[imageKey] = e.target.result;
+                                    const card = createImageCard(file, e.target.result, false, folderIndex);
+                                    gallery.appendChild(card);
+                                };
+                                reader.readAsDataURL(file);
+                            }
+                        }
+                    } else {
+                        // 如果该文件夹没有第currentPage张图片，显示占位符
+                        const emptyCard = document.createElement('div');
+                        emptyCard.className = 'image-card';
+                        emptyCard.innerHTML = `
+                            <div class="image-container" style="display: flex; align-items: center; justify-content: center; background: var(--bg-primary);">
+                                <div style="text-align: center; color: var(--text-muted);">
+                                    <div style="font-size: 3rem; opacity: 0.3; margin-bottom: 12px;">📭</div>
+                                    <div style="font-size: 0.9rem;">无更多图片</div>
+                                </div>
+                            </div>
+                            <div class="image-name">${folder.name}</div>
+                        `;
+                        gallery.appendChild(emptyCard);
+                    }
+                });
+            }
+
+            updatePaginationButtons();
+        }
+
+        // 创建图片卡片
+        function createImageCard(file, imageUrl, isRaw = false, folderIndex = -1) {
+            const card = document.createElement('div');
+            card.className = 'image-card';
+
+            const imageKey = `${file.name}_${file.size}`;
+
+            // 根据评分模式获取当前评分和评论
+            let currentRating = null;
+            let currentComment = '';
+            let folderName = file.folderName || (folders[folderIndex] ? folders[folderIndex].name : '');
+
+            if (ratings[imageKey]) {
+                if (ratingMode === 'single') {
+                    // 单一评分模式：只显示主文件夹的评分
+                    const targetFolderIndex = mainFolderIndex !== -1 ? mainFolderIndex : 0;
+                    const targetFolderName = folders[targetFolderIndex] ? folders[targetFolderIndex].name : '';
+                    const ratingData = ratings[imageKey][targetFolderName];
+                    if (typeof ratingData === 'string') {
+                        currentRating = ratingData;
+                    } else if (ratingData && typeof ratingData === 'object') {
+                        currentRating = ratingData.rating;
+                        currentComment = ratingData.comment || '';
+                    }
+                } else {
+                    // 多维评分模式：显示当前文件夹的评分
+                    const ratingData = ratings[imageKey][folderName];
+                    if (typeof ratingData === 'string') {
+                        currentRating = ratingData;
+                    } else if (ratingData && typeof ratingData === 'object') {
+                        currentRating = ratingData.rating;
+                        currentComment = ratingData.comment || '';
+                    }
+                }
+            }
+
+            // 判断是否显示评分按钮
+            let showRating = true;
+
+            // 单一评分模式下，只在主文件夹的图片上显示评分
+            if (ratingMode === 'single' && folders.length > 1) {
+                const targetFolderIndex = mainFolderIndex !== -1 ? mainFolderIndex : 0;
+                if (folderIndex !== -1 && folderIndex !== targetFolderIndex) {
+                    showRating = false;
+                }
+            }
+
+            let imageContent;
+            if (isRaw) {
+                const ext = file.name.split('.').pop().toUpperCase();
+                imageContent = `
+                    <div class="image-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-card) 100%);">
+                        <div style="font-size: 4rem; margin-bottom: 20px; opacity: 0.6;">📷</div>
+                        <div style="font-size: 1.2rem; font-weight: 600; color: var(--primary-purple); margin-bottom: 8px;">${ext} 格式</div>
+                        <div style="font-size: 0.9rem; color: var(--text-muted); text-align: center; padding: 0 20px;">RAW 文件已识别<br/>可正常评分</div>
+                    </div>
+                `;
+            } else {
+                // 多文件夹模式：点击图片直接进入对比模式
+                if (folders.length > 1) {
+                    imageContent = `
+                        <div class="image-container" style="cursor: pointer;" onclick="openDirectCompare()">
+                            <img src="${imageUrl}" alt="${file.name}">
+                        </div>
+                    `;
+                } else {
+                    // 单文件夹模式：打开单图查看
+                    imageContent = `
+                        <div class="image-container" style="cursor: pointer;" onclick="openModal('${imageUrl}', '${imageKey}')">
+                            <img src="${imageUrl}" alt="${file.name}">
+                        </div>
+                    `;
+                }
+            }
+
+            const isSelected = compareSelection.has(imageKey);
+
+            // 文件夹标签（仅在有多个文件夹时显示）
+            const folderTag = folders.length > 1 && file.folderName ?
+                `<div class="folder-tag">${file.folderName}</div>` : '';
+
+            // 多文件夹模式下不显示复选框
+            const compareCheckbox = folders.length === 1 ? `
+                <input type="checkbox" class="compare-checkbox" id="compare_${imageKey}"
+                       ${isSelected ? 'checked' : ''}
+                       onchange="toggleCompareSelection('${imageKey}', this.checked)">
+                <label class="compare-checkbox-label" for="compare_${imageKey}"></label>
+            ` : '';
+
+            // 根据条件决定是否显示评分按钮
+            // 对于多维评分，需要传递文件夹名称
+            const escapedFolderName = folderName.replace(/'/g, "\\'");
+            const escapedComment = currentComment.replace(/'/g, "\\'").replace(/\n/g, '\\n');
+            const ratingBar = showRating ? `
+                <div class="rating-bar">
+                    <button class="rating-btn ${currentRating === 'like' ? 'active like' : ''}"
+                            onclick="rateImage('${imageKey}', 'like', this, '${escapedFolderName}')">
+                        👍 喜欢
+                    </button>
+                    <button class="rating-btn ${currentRating === 'neutral' ? 'active neutral' : ''}"
+                            onclick="rateImage('${imageKey}', 'neutral', this, '${escapedFolderName}')">
+                        😐 一般
+                    </button>
+                    <button class="rating-btn ${currentRating === 'dislike' ? 'active dislike' : ''}"
+                            onclick="rateImage('${imageKey}', 'dislike', this, '${escapedFolderName}')">
+                        👎 不喜欢
+                    </button>
+                </div>
+                <div class="comment-box">
+                    <textarea class="comment-input"
+                              placeholder="添加评价 (可选)..."
+                              onchange="saveComment('${imageKey}', this.value, '${escapedFolderName}')"
+                              onblur="saveComment('${imageKey}', this.value, '${escapedFolderName}')"
+                    >${currentComment}</textarea>
+                </div>
+            ` : '';
+
+            card.innerHTML = `
+                ${compareCheckbox}
+                ${folderTag}
+                ${imageContent}
+                <div class="image-name" title="${file.name}">${file.name}</div>
+                ${ratingBar}
+            `;
+
+            return card;
+        }
+
+        // 评分图片
+        function rateImage(imageKey, rating, button, folderName) {
+            const ratingBar = button.parentElement;
+            const buttons = ratingBar.querySelectorAll('.rating-btn');
+
+            // 初始化评分对象
+            if (!ratings[imageKey]) {
+                ratings[imageKey] = {};
+            }
+
+            // 获取当前评分数据
+            const currentData = ratings[imageKey][folderName];
+            const currentRating = typeof currentData === 'string' ? currentData : (currentData?.rating || null);
+            const currentComment = typeof currentData === 'object' ? (currentData?.comment || '') : '';
+
+            // 如果点击已选中的按钮，则取消评分
+            if (currentRating === rating) {
+                delete ratings[imageKey][folderName];
+                // 如果这个图片没有任何文件夹的评分了，删除整个条目
+                if (Object.keys(ratings[imageKey]).length === 0) {
+                    delete ratings[imageKey];
+                }
+                buttons.forEach(btn => {
+                    btn.classList.remove('active', 'like', 'neutral', 'dislike');
+                });
+            } else {
+                // 保存评分，如果有评论则保存为对象
+                if (currentComment) {
+                    ratings[imageKey][folderName] = {
+                        rating: rating,
+                        comment: currentComment
+                    };
+                } else {
+                    ratings[imageKey][folderName] = {
+                        rating: rating,
+                        comment: ''
+                    };
+                }
+                buttons.forEach(btn => {
+                    btn.classList.remove('active', 'like', 'neutral', 'dislike');
+                });
+                button.classList.add('active', rating);
+            }
+
+            saveRatings();
+            updateStats();
+        }
+
+        // 保存评论
+        function saveComment(imageKey, comment, folderName) {
+            comment = comment.trim();
+
+            if (!ratings[imageKey]) {
+                ratings[imageKey] = {};
+            }
+
+            const currentData = ratings[imageKey][folderName];
+            const currentRating = typeof currentData === 'string' ? currentData : (currentData?.rating || null);
+
+            // 如果有评分或评论，保存为对象
+            if (currentRating || comment) {
+                ratings[imageKey][folderName] = {
+                    rating: currentRating,
+                    comment: comment
+                };
+            } else {
+                // 如果既没有评分也没有评论，删除条目
+                delete ratings[imageKey][folderName];
+                if (Object.keys(ratings[imageKey]).length === 0) {
+                    delete ratings[imageKey];
+                }
+            }
+
+            saveRatings();
+        }
+
+        // 更新统计数据
+        function updateStats() {
+            const total = allImages.length;
+            let liked = 0, neutral = 0, disliked = 0;
+
+            allImages.forEach(file => {
+                const imageKey = `${file.name}_${file.size}`;
+                const folderName = file.folderName || '';
+
+                // 获取评分（根据评分模式）
+                let ratingData = null;
+                if (ratings[imageKey]) {
+                    if (ratingMode === 'single') {
+                        // 单一评分模式：统计主文件夹的评分
+                        const targetFolderIndex = mainFolderIndex !== -1 ? mainFolderIndex : 0;
+                        const targetFolderName = folders[targetFolderIndex] ? folders[targetFolderIndex].name : '';
+                        ratingData = ratings[imageKey][targetFolderName];
+                    } else {
+                        // 多维评分模式：统计所有文件夹的评分
+                        ratingData = ratings[imageKey][folderName];
+                    }
+                }
+
+                // 兼容新旧数据格式
+                const rating = typeof ratingData === 'string' ? ratingData : (ratingData?.rating || null);
+
+                if (rating === 'like') liked++;
+                else if (rating === 'neutral') neutral++;
+                else if (rating === 'dislike') disliked++;
+            });
+
+            const unrated = total - liked - neutral - disliked;
+
+            // 计算百分比
+            const likedPercent = total > 0 ? Math.round((liked / total) * 100) : 0;
+            const neutralPercent = total > 0 ? Math.round((neutral / total) * 100) : 0;
+            const dislikedPercent = total > 0 ? Math.round((disliked / total) * 100) : 0;
+            const unratedPercent = total > 0 ? Math.round((unrated / total) * 100) : 0;
+
+            // 更新数量
+            document.getElementById('totalImages').textContent = total;
+            document.getElementById('likedCount').textContent = liked;
+            document.getElementById('neutralCount').textContent = neutral;
+            document.getElementById('dislikedCount').textContent = disliked;
+
+            // 未评分卡片：如果所有图片都评分了，显示照片总数
+            const unratedCard = document.querySelector('.stat-item:has(#unratedCount)');
+            const unratedLabel = unratedCard?.querySelector('.stat-label');
+            const unratedIcon = unratedCard?.querySelector('.stat-value').previousElementSibling;
+
+            if (unrated === 0) {
+                document.getElementById('unratedCount').textContent = total;
+                document.getElementById('unratedPercent').textContent = '100%';
+                if (unratedLabel) unratedLabel.textContent = '📊 照片总数';
+            } else {
+                document.getElementById('unratedCount').textContent = unrated;
+                document.getElementById('unratedPercent').textContent = `${unratedPercent}%`;
+                if (unratedLabel) unratedLabel.textContent = '⭕ 未评分';
+            }
+
+            // 更新百分比
+            document.getElementById('likedPercent').textContent = `${likedPercent}%`;
+            document.getElementById('neutralPercent').textContent = `${neutralPercent}%`;
+            document.getElementById('dislikedPercent').textContent = `${dislikedPercent}%`;
+        }
+
+        // 上一页
+        function prevPage() {
+            if (currentPage > 0) {
+                currentPage--;
+                displayImages();
+            }
+        }
+
+        // 下一页
+        function nextPage() {
+            let maxPage;
+            if (folders.length === 1) {
+                // 单文件夹模式
+                const imagesPerPage = 3;
+                maxPage = Math.ceil(allImages.length / imagesPerPage) - 1;
+            } else {
+                // 多文件夹对比模式：最大页数是最长文件夹的图片数量
+                const maxImages = Math.max(...folders.map(f => f.images.length));
+                maxPage = maxImages - 1;
+            }
+
+            if (currentPage < maxPage) {
+                currentPage++;
+                displayImages();
+            }
+        }
+
+        // 更新分页按钮状态
+        function updatePaginationButtons() {
+            let maxPage, totalPages;
+
+            if (folders.length === 1) {
+                // 单文件夹模式
+                const imagesPerPage = 3;
+                maxPage = Math.ceil(allImages.length / imagesPerPage) - 1;
+                totalPages = maxPage + 1;
+            } else {
+                // 多文件夹对比模式
+                const maxImages = Math.max(...folders.map(f => f.images.length));
+                maxPage = maxImages - 1;
+                totalPages = maxImages;
+            }
+
+            const buttons = document.querySelectorAll('.pagination button');
+            const pageInfo = document.getElementById('pageInfo');
+
+            buttons[0].disabled = currentPage === 0;
+            buttons[1].disabled = currentPage === maxPage;
+
+            if (folders.length === 1) {
+                pageInfo.textContent = `第 ${currentPage + 1} 页 / 共 ${totalPages} 页`;
+            } else {
+                pageInfo.textContent = `第 ${currentPage + 1} 组 / 共 ${totalPages} 组 (${folders.length}个文件夹对比)`;
+            }
+        }
+
+        // 初始化
+        loadRatings();
+        loadSettings(); // 加载用户设置（评分模式、主文件夹等）
+        loadDrawings(); // 加载画笔标记
+
+        // ==================== 图片查看器功能 ====================
+
+        // 打开模态框
+        function openModal(imageUrl, imageKey = '') {
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+
+            modalImage.src = imageUrl;
+            modal.classList.add('active');
+            resetZoom();
+
+            // 设置当前图片key用于标记功能
+            currentImageKey = imageKey;
+
+            // 如果处于画笔模式，加载标记
+            if (isDrawMode) {
+                setTimeout(() => loadDrawing(), 100);
+            }
+
+            // 阻止body滚动
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 打开模态框并自动激活画笔模式
+        function openModalForDrawing(imageUrl, imageKey = '') {
+            openModal(imageUrl, imageKey);
+
+            // 等待图片加载后自动激活画笔
+            const modalImage = document.getElementById('modalImage');
+            modalImage.onload = function() {
+                if (!isDrawMode) {
+                    setTimeout(() => toggleDrawMode(), 100);
+                }
+            };
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('active');
+
+            // 关闭画笔模式
+            if (isDrawMode) {
+                toggleDrawMode();
+            }
+
+            // 恢复body滚动
+            document.body.style.overflow = 'auto';
+        }
+
+        // 放大
+        function zoomIn() {
+            currentZoom = Math.min(currentZoom + 0.25, 5);
+            updateTransform();
+        }
+
+        // 缩小
+        function zoomOut() {
+            currentZoom = Math.max(currentZoom - 0.25, 0.25);
+            updateTransform();
+        }
+
+        // 重置缩放
+        function resetZoom() {
+            currentZoom = 1;
+            currentX = 0;
+            currentY = 0;
+            updateTransform();
+        }
+
+        // 更新变换
+        function updateTransform() {
+            const modalContent = document.getElementById('modalContent');
+            modalContent.style.transform = `translate(${currentX}px, ${currentY}px) scale(${currentZoom})`;
+
+            // 更新缩放信息显示
+            const zoomInfo = document.getElementById('zoomInfo');
+            zoomInfo.textContent = `${Math.round(currentZoom * 100)}%`;
+
+            // 更新canvas大小和位置
+            if (isDrawMode) {
+                const canvas = document.getElementById('drawCanvas');
+                const img = document.getElementById('modalImage');
+                canvas.style.transform = modalContent.style.transform;
+            }
+        }
+
+        // ==================== 画笔功能 ====================
+
+        // 切换画笔模式
+        function toggleDrawMode() {
+            isDrawMode = !isDrawMode;
+            const toolbar = document.getElementById('drawToolbar');
+            const btn = document.getElementById('drawModeBtn');
+            const modal = document.getElementById('imageModal');
+            const canvas = document.getElementById('drawCanvas');
+
+            if (isDrawMode) {
+                toolbar.classList.add('active');
+                btn.classList.add('active');
+                btn.textContent = '✓ 标记中...';
+                btn.style.background = 'linear-gradient(135deg, var(--color-like) 0%, var(--color-like-light) 100%)';
+                modal.style.cursor = 'crosshair';
+
+                // 初始化canvas
+                const img = document.getElementById('modalImage');
+                canvas.width = img.naturalWidth;
+                canvas.height = img.naturalHeight;
+                canvas.style.width = img.width + 'px';
+                canvas.style.height = img.height + 'px';
+                canvas.style.transform = document.getElementById('modalContent').style.transform;
+
+                // 加载已有的标记
+                loadDrawing();
+
+                // 添加canvas事件监听
+                canvas.addEventListener('mousedown', startDrawing);
+                canvas.addEventListener('mousemove', draw);
+                canvas.addEventListener('mouseup', stopDrawing);
+                canvas.addEventListener('mouseout', stopDrawing);
+            } else {
+                toolbar.classList.remove('active');
+                btn.classList.remove('active');
+                btn.textContent = '✏️ 标记细节';
+                btn.style.background = 'linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)';
+                modal.style.cursor = 'grab';
+
+                // 移除canvas事件监听
+                canvas.removeEventListener('mousedown', startDrawing);
+                canvas.removeEventListener('mousemove', draw);
+                canvas.removeEventListener('mouseup', stopDrawing);
+                canvas.removeEventListener('mouseout', stopDrawing);
+            }
+        }
+
+        // 设置绘图工具
+        function setDrawTool(tool) {
+            drawTool = tool;
+            document.querySelectorAll('.draw-tool-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            const canvas = document.getElementById('drawCanvas');
+            if (tool === 'eraser') {
+                canvas.style.cursor = 'cell';
+            } else {
+                canvas.style.cursor = 'crosshair';
+            }
+        }
+
+        // 开始绘制
+        function startDrawing(e) {
+            if (!isDrawMode) return;
+            isDrawing = true;
+            const canvas = document.getElementById('drawCanvas');
+            const rect = canvas.getBoundingClientRect();
+            lastX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            lastY = (e.clientY - rect.top) * (canvas.height / rect.height);
+        }
+
+        // 绘制
+        function draw(e) {
+            if (!isDrawing || !isDrawMode) return;
+
+            const canvas = document.getElementById('drawCanvas');
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(x, y);
+
+            if (drawTool === 'pen') {
+                drawColor = document.getElementById('drawColor').value;
+                ctx.strokeStyle = drawColor;
+                ctx.lineWidth = 3;
+                ctx.globalCompositeOperation = 'source-over';
+            } else if (drawTool === 'eraser') {
+                ctx.lineWidth = 20;
+                ctx.globalCompositeOperation = 'destination-out';
+            }
+
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+
+            lastX = x;
+            lastY = y;
+        }
+
+        // 停止绘制
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        // 清除绘制
+        function clearDrawing() {
+            if (!confirm('确定要清除所有标记吗？')) return;
+
+            const canvas = document.getElementById('drawCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 删除保存的标记
+            if (currentImageKey) {
+                delete drawings[currentImageKey];
+                saveDrawings();
+            }
+        }
+
+        // 保存绘制
+        function saveDrawing() {
+            const canvas = document.getElementById('drawCanvas');
+            if (currentImageKey) {
+                drawings[currentImageKey] = canvas.toDataURL();
+                saveDrawings();
+                alert('标记已保存！');
+            }
+        }
+
+        // 加载绘制
+        function loadDrawing() {
+            if (!currentImageKey || !drawings[currentImageKey]) return;
+
+            const canvas = document.getElementById('drawCanvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0);
+            };
+            img.src = drawings[currentImageKey];
+        }
+
+        // 保存标记到localStorage
+        function saveDrawings() {
+            localStorage.setItem('imageDrawings', JSON.stringify(drawings));
+        }
+
+        // 从localStorage加载标记
+        function loadDrawings() {
+            const saved = localStorage.getItem('imageDrawings');
+            if (saved) {
+                drawings = JSON.parse(saved);
+            }
+        }
+
+        // 模态框事件监听
+        const imageModal = document.getElementById('imageModal');
+        const modalContent = document.getElementById('modalContent');
+
+        // 获取位置（兼容鼠标和触摸）
+        function getEventPosition(e) {
+            if (e.touches && e.touches.length > 0) {
+                return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+            return { x: e.clientX, y: e.clientY };
+        }
+
+        // 鼠标/触摸按下
+        function handleDragStart(e) {
+            if (e.target === imageModal || e.target === modalContent || e.target.id === 'modalImage') {
+                const pos = getEventPosition(e);
+                isDragging = true;
+                startX = pos.x - currentX;
+                startY = pos.y - currentY;
+                imageModal.classList.add('dragging');
+            }
+        }
+
+        // 鼠标/触摸移动
+        function handleDragMove(e) {
+            if (isDragging) {
+                e.preventDefault();
+                const pos = getEventPosition(e);
+                currentX = pos.x - startX;
+                currentY = pos.y - startY;
+                updateTransform();
+            }
+        }
+
+        // 鼠标/触摸释放
+        function handleDragEnd() {
+            isDragging = false;
+            imageModal.classList.remove('dragging');
+        }
+
+        // 鼠标事件
+        imageModal.addEventListener('mousedown', handleDragStart);
+        imageModal.addEventListener('mousemove', handleDragMove);
+        imageModal.addEventListener('mouseup', handleDragEnd);
+
+        // 触摸事件
+        imageModal.addEventListener('touchstart', handleDragStart, { passive: true });
+        imageModal.addEventListener('touchmove', handleDragMove, { passive: false });
+        imageModal.addEventListener('touchend', handleDragEnd);
+        imageModal.addEventListener('touchcancel', handleDragEnd);
+
+        // 双指捏合缩放支持
+        let initialPinchDistance = 0;
+        let initialZoom = 1;
+
+        imageModal.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                initialPinchDistance = Math.hypot(
+                    touch2.clientX - touch1.clientX,
+                    touch2.clientY - touch1.clientY
+                );
+                initialZoom = currentZoom;
+            }
+        }, { passive: false });
+
+        imageModal.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                const currentDistance = Math.hypot(
+                    touch2.clientX - touch1.clientX,
+                    touch2.clientY - touch1.clientY
+                );
+                const scale = currentDistance / initialPinchDistance;
+                currentZoom = Math.max(0.25, Math.min(5, initialZoom * scale));
+                updateTransform();
+            }
+        }, { passive: false });
+
+        // 鼠标滚轮缩放
+        imageModal.addEventListener('wheel', (e) => {
+            e.preventDefault();
+
+            if (e.deltaY < 0) {
+                // 向上滚动 - 放大
+                currentZoom = Math.min(currentZoom + 0.1, 5);
+            } else {
+                // 向下滚动 - 缩小
+                currentZoom = Math.max(currentZoom - 0.1, 0.25);
+            }
+
+            updateTransform();
+        }, { passive: false });
+
+        // 双击重置
+        imageModal.addEventListener('dblclick', (e) => {
+            if (e.target === imageModal || e.target === modalContent || e.target.id === 'modalImage') {
+                resetZoom();
+            }
+        });
+
+        // ESC键关闭
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // 点击背景关闭（仅点击模态框背景，不包括图片）
+        imageModal.addEventListener('click', (e) => {
+            if (e.target === imageModal) {
+                closeModal();
+            }
+        });
+
+        // ==================== 预览悬浮功能 ====================
+
+        let previewTimeout = null;
+        let imageCache = {}; // 缓存图片 URL
+
+        // 显示预览
+        function showPreview(event, ratingType) {
+            // 清除之前的延迟隐藏
+            if (previewTimeout) {
+                clearTimeout(previewTimeout);
+                previewTimeout = null;
+            }
+
+            const tooltip = document.getElementById('previewTooltip');
+            const title = document.getElementById('previewTitle');
+            const grid = document.getElementById('previewGrid');
+
+            // 根据评分类型筛选图片
+            const filteredImages = allImages.filter(file => {
+                const imageKey = `${file.name}_${file.size}`;
+                const folderName = file.folderName || '';
+
+                // 获取评分（根据评分模式）
+                let rating = null;
+                if (ratings[imageKey]) {
+                    if (ratingMode === 'single') {
+                        // 单一评分模式：使用主文件夹的评分
+                        const targetFolderIndex = mainFolderIndex !== -1 ? mainFolderIndex : 0;
+                        const targetFolderName = folders[targetFolderIndex] ? folders[targetFolderIndex].name : '';
+                        rating = ratings[imageKey][targetFolderName];
+                    } else {
+                        // 多维评分模式：使用当前文件夹的评分
+                        rating = ratings[imageKey][folderName];
+                    }
+                }
+
+                if (ratingType === 'unrated') {
+                    return !rating;
+                } else {
+                    return rating === ratingType;
+                }
+            });
+
+            // 设置标题
+            const titles = {
+                'like': '👍 喜欢的图片',
+                'neutral': '😐 一般的图片',
+                'dislike': '👎 不喜欢的图片',
+                'unrated': '⭕ 未评分的图片'
+            };
+            title.textContent = titles[ratingType];
+
+            // 清空网格
+            grid.innerHTML = '';
+
+            if (filteredImages.length === 0) {
+                grid.innerHTML = '<div class="preview-empty">暂无图片</div>';
+            } else {
+                // 显示图片（最多显示前20张）
+                const displayImages = filteredImages.slice(0, 20);
+
+                displayImages.forEach(file => {
+                    const imageKey = `${file.name}_${file.size}`;
+
+                    // 检查是否是RAW文件
+                    if (isRawFile(file)) {
+                        // RAW文件显示图标
+                        const ext = file.name.split('.').pop().toUpperCase();
+                        const item = document.createElement('div');
+                        item.className = 'preview-image-item';
+                        item.innerHTML = `
+                            <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-card) 100%);">
+                                <div style="font-size: 2rem; opacity: 0.6;">📷</div>
+                                <div style="font-size: 0.7rem; color: var(--primary-purple); margin-top: 4px;">${ext}</div>
+                            </div>
+                            <div class="preview-image-name">${file.name}</div>
+                        `;
+                        grid.appendChild(item);
+                    } else {
+                        // 普通图片
+                        if (imageCache[imageKey]) {
+                            // 使用缓存的图片
+                            addPreviewImage(grid, imageCache[imageKey], file.name);
+                        } else {
+                            // 读取图片
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                imageCache[imageKey] = e.target.result;
+                                addPreviewImage(grid, e.target.result, file.name);
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    }
+                });
+
+                // 如果图片总数超过20张，显示提示
+                if (filteredImages.length > 20) {
+                    const moreInfo = document.createElement('div');
+                    moreInfo.className = 'preview-empty';
+                    moreInfo.style.padding = '20px';
+                    moreInfo.textContent = `还有 ${filteredImages.length - 20} 张图片未显示`;
+                    grid.appendChild(moreInfo);
+                }
+            }
+
+            // 定位工具提示框
+            const rect = event.currentTarget.getBoundingClientRect();
+            const tooltipWidth = 600;
+            const tooltipHeight = 500;
+
+            let left = rect.left + rect.width / 2 - tooltipWidth / 2;
+            let top = rect.bottom + 10;
+
+            // 确保不超出屏幕
+            if (left < 10) left = 10;
+            if (left + tooltipWidth > window.innerWidth - 10) {
+                left = window.innerWidth - tooltipWidth - 10;
+            }
+            if (top + tooltipHeight > window.innerHeight - 10) {
+                top = rect.top - tooltipHeight - 10;
+            }
+
+            tooltip.style.left = `${left}px`;
+            tooltip.style.top = `${top}px`;
+            tooltip.classList.add('active');
+        }
+
+        // 添加预览图片到网格
+        function addPreviewImage(grid, imageUrl, fileName) {
+            const item = document.createElement('div');
+            item.className = 'preview-image-item';
+            item.innerHTML = `
+                <img src="${imageUrl}" alt="${fileName}">
+                <div class="preview-image-name">${fileName}</div>
+            `;
+            grid.appendChild(item);
+        }
+
+        // 隐藏预览
+        function hidePreview() {
+            // 延迟隐藏，以便鼠标移动到工具提示框时不会立即关闭
+            previewTimeout = setTimeout(() => {
+                const tooltip = document.getElementById('previewTooltip');
+                tooltip.classList.remove('active');
+            }, 200);
+        }
+
+        // 鼠标移入工具提示框时保持显示
+        const previewTooltip = document.getElementById('previewTooltip');
+        previewTooltip.addEventListener('mouseenter', () => {
+            if (previewTimeout) {
+                clearTimeout(previewTimeout);
+                previewTimeout = null;
+            }
+        });
+
+        // 鼠标移出工具提示框时隐藏
+        previewTooltip.addEventListener('mouseleave', () => {
+            hidePreview();
+        });
+
+        // ==================== 对比功能 ====================
+
+        // 切换对比选择
+        function toggleCompareSelection(imageKey, checked) {
+            if (checked) {
+                compareSelection.add(imageKey);
+                // 查找对应的文件对象
+                const file = allImages.find(f => `${f.name}_${f.size}` === imageKey);
+                if (file) {
+                    // 检查是否已经存在
+                    if (!compareImages.some(img => `${img.file.name}_${img.file.size}` === imageKey)) {
+                        // 获取图片URL
+                        if (isRawFile(file)) {
+                            compareImages.push({
+                                file: file,
+                                imageUrl: null,
+                                isRaw: true,
+                                folderName: file.folderName  // 添加文件夹名称
+                            });
+                        } else {
+                            if (imageCache[imageKey]) {
+                                compareImages.push({
+                                    file: file,
+                                    imageUrl: imageCache[imageKey],
+                                    isRaw: false,
+                                    folderName: file.folderName  // 添加文件夹名称
+                                });
+                            } else {
+                                const reader = new FileReader();
+                                reader.onload = (e) => {
+                                    imageCache[imageKey] = e.target.result;
+                                    compareImages.push({
+                                        file: file,
+                                        imageUrl: e.target.result,
+                                        isRaw: false,
+                                        folderName: file.folderName  // 添加文件夹名称
+                                    });
+                                };
+                                reader.readAsDataURL(file);
+                            }
+                        }
+                    }
+                }
+            } else {
+                compareSelection.delete(imageKey);
+                compareImages = compareImages.filter(img => `${img.file.name}_${img.file.size}` !== imageKey);
+            }
+
+            updateCompareBar();
+        }
+
+        // 更新对比栏
+        function updateCompareBar() {
+            const compareBar = document.getElementById('compareBar');
+            const compareCount = document.getElementById('compareCount');
+            const compareButton = document.getElementById('compareButton');
+
+            compareCount.textContent = compareSelection.size;
+
+            if (compareSelection.size > 0) {
+                compareBar.classList.add('active');
+                compareButton.disabled = compareSelection.size < 2;
+            } else {
+                compareBar.classList.remove('active');
+                compareButton.disabled = true;
+            }
+        }
+
+        // 清除对比选择
+        function clearCompareSelection() {
+            compareSelection.clear();
+            compareImages = [];
+            updateCompareBar();
+
+            // 取消所有复选框
+            document.querySelectorAll('.compare-checkbox').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        }
+
+        // 多文件夹模式：直接打开对比（不需要勾选）
+        function openDirectCompare() {
+            // 清空现有选择
+            compareImages = [];
+            compareSelection.clear();
+
+            // 收集当前页面显示的所有图片
+            folders.forEach((folder, folderIndex) => {
+                const file = folder.images[currentPage];
+                if (file) {
+                    const imageKey = `${file.name}_${file.size}`;
+
+                    // 添加到选择集合
+                    compareSelection.add(imageKey);
+
+                    // 检查是否是RAW文件
+                    if (isRawFile(file)) {
+                        compareImages.push({
+                            file: file,
+                            imageUrl: null,
+                            isRaw: true,
+                            folderName: folder.name  // 添加文件夹名称
+                        });
+                    } else {
+                        // 从缓存获取图片URL
+                        if (imageCache[imageKey]) {
+                            compareImages.push({
+                                file: file,
+                                imageUrl: imageCache[imageKey],
+                                isRaw: false,
+                                folderName: folder.name  // 添加文件夹名称
+                            });
+                        }
+                    }
+                }
+            });
+
+            // 如果有图片，打开对比模态框
+            if (compareImages.length > 0) {
+                openCompareModal();
+            }
+        }
+
+        // 打开对比模态框
+        function openCompareModal() {
+
+            const modal = document.getElementById('compareModal');
+            const content = document.getElementById('compareContent');
+
+            // 重置缩放模式
+            compareZoomMode = 'sync';
+            compareFocusedImage = null;
+            updateCompareModeIndicator();
+
+            // 清空内容
+            content.innerHTML = '';
+
+            // 设置网格列数
+            const count = compareImages.length;
+            if (count === 2) {
+                content.className = 'compare-content cols-2';
+            } else if (count === 3) {
+                content.className = 'compare-content cols-3';
+            } else {
+                content.className = 'compare-content cols-4';
+            }
+
+            // 为每张图片创建独立的容器
+            compareImages.forEach((img, index) => {
+                const imageKey = `${img.file.name}_${img.file.size}`;
+
+                // 初始化缩放状态
+                if (!compareStates[imageKey]) {
+                    compareStates[imageKey] = {
+                        zoom: 1,
+                        x: 0,
+                        y: 0
+                    };
+                }
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'compare-image-wrapper';
+                wrapper.dataset.imageKey = imageKey;
+                wrapper.tabIndex = 0; // 使元素可聚焦
+
+                // 文件夹名称标签（如果有的话）
+                const folderTag = img.folderName ? `
+                    <div class="compare-folder-tag">${img.folderName}</div>
+                ` : '';
+
+                if (img.isRaw) {
+                    const ext = img.file.name.split('.').pop().toUpperCase();
+                    wrapper.innerHTML = `
+                        ${folderTag}
+                        <div class="compare-zoom-info">${Math.round(compareStates[imageKey].zoom * 100)}%</div>
+                        <div class="compare-image-controls">
+                            <button class="compare-control-btn" onclick="compareZoomIn('${imageKey}')">+</button>
+                            <button class="compare-control-btn" onclick="compareZoomOut('${imageKey}')">−</button>
+                            <button class="compare-control-btn" onclick="compareResetZoom('${imageKey}')">↺</button>
+                        </div>
+                        <div class="compare-image-container">
+                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                <div style="font-size: 5rem; opacity: 0.6;">📷</div>
+                                <div style="font-size: 1.5rem; color: var(--primary-purple); margin-top: 12px;">${ext} 格式</div>
+                                <div style="font-size: 1rem; color: var(--text-muted); margin-top: 8px;">RAW 文件</div>
+                            </div>
+                        </div>
+                        <div class="compare-image-name">${img.file.name}</div>
+                    `;
+                } else {
+                    wrapper.innerHTML = `
+                        ${folderTag}
+                        <div class="compare-zoom-info">${Math.round(compareStates[imageKey].zoom * 100)}%</div>
+                        <div class="compare-image-controls">
+                            <button class="compare-control-btn" onclick="compareZoomIn('${imageKey}')">+</button>
+                            <button class="compare-control-btn" onclick="compareZoomOut('${imageKey}')">−</button>
+                            <button class="compare-control-btn" onclick="compareResetZoom('${imageKey}')">↺</button>
+                            <button class="compare-control-btn" onclick="event.stopPropagation(); openModalForDrawing('${img.imageUrl}', '${imageKey}')" title="标记细节">✏️</button>
+                        </div>
+                        <div class="compare-image-container">
+                            <img src="${img.imageUrl}" alt="${img.file.name}">
+                        </div>
+                        <div class="compare-image-name">${img.file.name}</div>
+                    `;
+                }
+
+                content.appendChild(wrapper);
+
+                // 应用初始变换
+                updateCompareTransform(imageKey);
+
+                // 添加拖拽事件
+                setupCompareDrag(wrapper, imageKey);
+
+                // 添加悬停事件监听
+                wrapper.addEventListener('mouseenter', () => {
+                    // 清除之前的计时器
+                    if (compareHoverTimer) {
+                        clearTimeout(compareHoverTimer);
+                    }
+
+                    // 设置2秒后切换到独立模式
+                    compareHoverTimer = setTimeout(() => {
+                        compareZoomMode = 'individual';
+                        compareFocusedImage = imageKey;
+                        updateCompareModeIndicator();
+
+                        // 添加聚焦样式
+                        document.querySelectorAll('.compare-image-wrapper').forEach(w => {
+                            w.classList.remove('focused');
+                        });
+                        wrapper.classList.add('focused');
+                    }, 2000);
+                });
+
+                wrapper.addEventListener('mouseleave', () => {
+                    // 清除计时器
+                    if (compareHoverTimer) {
+                        clearTimeout(compareHoverTimer);
+                        compareHoverTimer = null;
+                    }
+
+                    // 如果是当前聚焦的图片，延迟切换回同步模式
+                    if (compareFocusedImage === imageKey) {
+                        setTimeout(() => {
+                            // 检查鼠标是否还在其他图片上
+                            const hoveredWrapper = document.querySelector('.compare-image-wrapper:hover');
+                            if (!hoveredWrapper) {
+                                compareZoomMode = 'sync';
+                                compareFocusedImage = null;
+                                updateCompareModeIndicator();
+
+                                // 移除所有聚焦样式
+                                document.querySelectorAll('.compare-image-wrapper').forEach(w => {
+                                    w.classList.remove('focused');
+                                });
+                            }
+                        }, 300);
+                    }
+                });
+
+                // 添加滚轮缩放
+                wrapper.addEventListener('wheel', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const zoomDelta = e.deltaY < 0 ? 0.1 : -0.1;
+
+                    if (compareZoomMode === 'sync') {
+                        // 同步模式：所有图片一起缩放
+                        compareImages.forEach(img => {
+                            const key = `${img.file.name}_${img.file.size}`;
+                            const state = compareStates[key];
+                            state.zoom = Math.max(0.25, Math.min(5, state.zoom + zoomDelta));
+                            updateCompareTransform(key);
+                        });
+                    } else {
+                        // 独立模式：只缩放聚焦的图片
+                        const state = compareStates[imageKey];
+                        state.zoom = Math.max(0.25, Math.min(5, state.zoom + zoomDelta));
+                        updateCompareTransform(imageKey);
+                    }
+                }, { passive: false });
+            });
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            // 移除旧的事件监听器（如果存在）
+            if (compareContentWheelHandler) {
+                content.removeEventListener('wheel', compareContentWheelHandler);
+            }
+
+            // 在整个content区域添加滚轮事件监听，确保打开后立即可用
+            compareContentWheelHandler = (e) => {
+                e.preventDefault();
+                const zoomDelta = e.deltaY < 0 ? 0.1 : -0.1;
+
+                // 同步模式：所有图片一起缩放
+                compareImages.forEach(img => {
+                    const key = `${img.file.name}_${img.file.size}`;
+                    const state = compareStates[key];
+                    if (state) {
+                        state.zoom = Math.max(0.25, Math.min(5, state.zoom + zoomDelta));
+                        updateCompareTransform(key);
+                    }
+                });
+            };
+            content.addEventListener('wheel', compareContentWheelHandler, { passive: false });
+
+            // 双指捏合缩放支持（移动设备）
+            let comparePinchDistance = 0;
+            let compareInitialZooms = {};
+
+            content.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    comparePinchDistance = Math.hypot(
+                        touch2.clientX - touch1.clientX,
+                        touch2.clientY - touch1.clientY
+                    );
+                    // 保存所有图片的当前缩放值
+                    compareImages.forEach(img => {
+                        const key = `${img.file.name}_${img.file.size}`;
+                        compareInitialZooms[key] = compareStates[key].zoom;
+                    });
+                }
+            }, { passive: false });
+
+            content.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2) {
+                    e.preventDefault();
+                    const touch1 = e.touches[0];
+                    const touch2 = e.touches[1];
+                    const currentDistance = Math.hypot(
+                        touch2.clientX - touch1.clientX,
+                        touch2.clientY - touch1.clientY
+                    );
+                    const scale = currentDistance / comparePinchDistance;
+
+                    // 同步模式：所有图片一起缩放
+                    compareImages.forEach(img => {
+                        const key = `${img.file.name}_${img.file.size}`;
+                        const state = compareStates[key];
+                        if (state && compareInitialZooms[key]) {
+                            state.zoom = Math.max(0.25, Math.min(5, compareInitialZooms[key] * scale));
+                            updateCompareTransform(key);
+                        }
+                    });
+                }
+            }, { passive: false });
+        }
+
+        // 关闭对比模态框
+        function closeCompareModal() {
+            const modal = document.getElementById('compareModal');
+            const content = document.getElementById('compareContent');
+
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+
+            // 移除content区域的滚轮事件监听器
+            if (compareContentWheelHandler) {
+                content.removeEventListener('wheel', compareContentWheelHandler);
+                compareContentWheelHandler = null;
+            }
+
+            // 清除悬停计时器
+            if (compareHoverTimer) {
+                clearTimeout(compareHoverTimer);
+                compareHoverTimer = null;
+            }
+
+            // 重置模式
+            compareZoomMode = 'sync';
+            compareFocusedImage = null;
+        }
+
+        // 对比图片放大
+        function compareZoomIn(imageKey) {
+            if (compareZoomMode === 'sync') {
+                // 同步模式：所有图片一起放大
+                compareImages.forEach(img => {
+                    const key = `${img.file.name}_${img.file.size}`;
+                    const state = compareStates[key];
+                    state.zoom = Math.min(state.zoom + 0.25, 5);
+                    updateCompareTransform(key);
+                });
+            } else {
+                // 独立模式：只放大指定图片
+                const state = compareStates[imageKey];
+                state.zoom = Math.min(state.zoom + 0.25, 5);
+                updateCompareTransform(imageKey);
+            }
+        }
+
+        // 对比图片缩小
+        function compareZoomOut(imageKey) {
+            if (compareZoomMode === 'sync') {
+                // 同步模式：所有图片一起缩小
+                compareImages.forEach(img => {
+                    const key = `${img.file.name}_${img.file.size}`;
+                    const state = compareStates[key];
+                    state.zoom = Math.max(state.zoom - 0.25, 0.25);
+                    updateCompareTransform(key);
+                });
+            } else {
+                // 独立模式：只缩小指定图片
+                const state = compareStates[imageKey];
+                state.zoom = Math.max(state.zoom - 0.25, 0.25);
+                updateCompareTransform(imageKey);
+            }
+        }
+
+        // 对比图片重置缩放
+        function compareResetZoom(imageKey) {
+            if (compareZoomMode === 'sync') {
+                // 同步模式：重置所有图片
+                compareImages.forEach(img => {
+                    const key = `${img.file.name}_${img.file.size}`;
+                    const state = compareStates[key];
+                    state.zoom = 1;
+                    state.x = 0;
+                    state.y = 0;
+                    updateCompareTransform(key);
+                });
+            } else {
+                // 独立模式：只重置指定图片
+                const state = compareStates[imageKey];
+                state.zoom = 1;
+                state.x = 0;
+                state.y = 0;
+                updateCompareTransform(imageKey);
+            }
+        }
+
+        // 更新缩放模式指示器
+        function updateCompareModeIndicator() {
+            const indicator = document.getElementById('compareModeIndicator');
+            const modeText = document.getElementById('compareModeText');
+            const modeIcon = indicator.querySelector('.compare-mode-icon');
+
+            if (compareZoomMode === 'sync') {
+                indicator.className = 'compare-mode-indicator sync-mode';
+                modeIcon.textContent = '🔗';
+                modeText.textContent = '同步缩放模式';
+            } else {
+                indicator.className = 'compare-mode-indicator individual-mode';
+                modeIcon.textContent = '🎯';
+                modeText.textContent = '独立缩放模式';
+            }
+        }
+
+        // 更新对比图片变换
+        function updateCompareTransform(imageKey) {
+            const wrapper = document.querySelector(`.compare-image-wrapper[data-image-key="${imageKey}"]`);
+            if (!wrapper) return;
+
+            const state = compareStates[imageKey];
+            const container = wrapper.querySelector('.compare-image-container');
+            const zoomInfo = wrapper.querySelector('.compare-zoom-info');
+
+            container.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.zoom})`;
+            zoomInfo.textContent = `${Math.round(state.zoom * 100)}%`;
+        }
+
+        // 设置对比图片拖拽（支持鼠标和触摸）
+        function setupCompareDrag(wrapper, imageKey) {
+            let isDragging = false;
+            let startX = 0;
+            let startY = 0;
+
+            // 获取位置（兼容鼠标和触摸）
+            function getPosition(e) {
+                if (e.touches && e.touches.length > 0) {
+                    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+                return { x: e.clientX, y: e.clientY };
+            }
+
+            // 开始拖拽
+            function startDrag(e) {
+                e.preventDefault();
+                const state = compareStates[imageKey];
+                const pos = getPosition(e);
+                isDragging = true;
+                startX = pos.x - state.x;
+                startY = pos.y - state.y;
+                wrapper.classList.add('dragging');
+            }
+
+            // 移动中
+            function moveDrag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    const pos = getPosition(e);
+
+                    if (compareZoomMode === 'sync') {
+                        // 同步模式：所有图片一起移动
+                        const deltaX = pos.x - startX;
+                        const deltaY = pos.y - startY;
+                        const currentState = compareStates[imageKey];
+                        const offsetX = deltaX - currentState.x;
+                        const offsetY = deltaY - currentState.y;
+
+                        compareImages.forEach(img => {
+                            const key = `${img.file.name}_${img.file.size}`;
+                            const state = compareStates[key];
+                            state.x += offsetX;
+                            state.y += offsetY;
+                            updateCompareTransform(key);
+                        });
+                    } else {
+                        // 独立模式：只移动当前图片
+                        const state = compareStates[imageKey];
+                        state.x = pos.x - startX;
+                        state.y = pos.y - startY;
+                        updateCompareTransform(imageKey);
+                    }
+                }
+            }
+
+            // 结束拖拽
+            function endDrag() {
+                isDragging = false;
+                wrapper.classList.remove('dragging');
+            }
+
+            // 鼠标事件
+            wrapper.addEventListener('mousedown', startDrag);
+            wrapper.addEventListener('mousemove', moveDrag);
+            wrapper.addEventListener('mouseup', endDrag);
+            wrapper.addEventListener('mouseleave', endDrag);
+
+            // 触摸事件
+            wrapper.addEventListener('touchstart', startDrag, { passive: false });
+            wrapper.addEventListener('touchmove', moveDrag, { passive: false });
+            wrapper.addEventListener('touchend', endDrag);
+            wrapper.addEventListener('touchcancel', endDrag);
+        }
+
+        // ESC键关闭对比模态框
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const compareModal = document.getElementById('compareModal');
+                if (compareModal.classList.contains('active')) {
+                    closeCompareModal();
+                }
+
+                const reportModal = document.getElementById('reportModal');
+                if (reportModal.classList.contains('active')) {
+                    closeReport();
+                }
+            }
+        });
+
+        // ==================== 报告功能 ====================
+
+        // 归纳相似评论
+        function groupSimilarComments(comments) {
+            if (comments.length === 0) return [];
+
+            const groups = [];
+            const processed = new Set();
+
+            comments.forEach((item, index) => {
+                if (processed.has(index)) return;
+
+                const similarItems = [item];
+                processed.add(index);
+
+                // 查找相似的评论
+                for (let i = index + 1; i < comments.length; i++) {
+                    if (processed.has(i)) continue;
+
+                    const similarity = calculateSimilarity(item.comment, comments[i].comment);
+                    // 相似度超过60%归为一组
+                    if (similarity > 0.6) {
+                        similarItems.push(comments[i]);
+                        processed.add(i);
+                    }
+                }
+
+                groups.push({
+                    representative: item.comment,
+                    items: similarItems
+                });
+            });
+
+            // 按组内数量降序排列
+            return groups.sort((a, b) => b.items.length - a.items.length);
+        }
+
+        // 计算两个字符串的相似度（简化版Levenshtein距离）
+        function calculateSimilarity(str1, str2) {
+            str1 = str1.toLowerCase().trim();
+            str2 = str2.toLowerCase().trim();
+
+            if (str1 === str2) return 1;
+            if (str1.length === 0 || str2.length === 0) return 0;
+
+            // 计算公共子串
+            let longer = str1.length > str2.length ? str1 : str2;
+            let shorter = str1.length > str2.length ? str2 : str1;
+
+            // 如果较短的字符串包含在较长的字符串中
+            if (longer.includes(shorter)) {
+                return shorter.length / longer.length;
+            }
+
+            // 计算编辑距离
+            const editDistance = levenshteinDistance(str1, str2);
+            const maxLength = Math.max(str1.length, str2.length);
+            return 1 - editDistance / maxLength;
+        }
+
+        // Levenshtein距离算法
+        function levenshteinDistance(str1, str2) {
+            const matrix = [];
+
+            for (let i = 0; i <= str2.length; i++) {
+                matrix[i] = [i];
+            }
+
+            for (let j = 0; j <= str1.length; j++) {
+                matrix[0][j] = j;
+            }
+
+            for (let i = 1; i <= str2.length; i++) {
+                for (let j = 1; j <= str1.length; j++) {
+                    if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j - 1] + 1,
+                            matrix[i][j - 1] + 1,
+                            matrix[i - 1][j] + 1
+                        );
+                    }
+                }
+            }
+
+            return matrix[str2.length][str1.length];
+        }
+
+        // 生成报告
+        function generateReport() {
+            const modal = document.getElementById('reportModal');
+            const container = document.getElementById('reportContainer');
+
+            // 统计数据
+            const total = allImages.length;
+            let liked = [], neutral = [], disliked = [], unrated = [];
+
+            // 收集评论
+            let goodComments = []; // 喜欢的评论
+            let badComments = []; // 一般+不喜欢的评论
+
+            allImages.forEach(file => {
+                const imageKey = `${file.name}_${file.size}`;
+                const folderName = file.folderName || '';
+
+                // 获取评分（根据评分模式）
+                let ratingData = null;
+                if (ratings[imageKey]) {
+                    if (ratingMode === 'single') {
+                        // 单一评分模式：统计主文件夹的评分
+                        const targetFolderIndex = mainFolderIndex !== -1 ? mainFolderIndex : 0;
+                        const targetFolderName = folders[targetFolderIndex] ? folders[targetFolderIndex].name : '';
+                        ratingData = ratings[imageKey][targetFolderName];
+                    } else {
+                        // 多维评分模式：统计所有文件夹的评分
+                        ratingData = ratings[imageKey][folderName];
+                    }
+                }
+
+                // 兼容新旧数据格式
+                const rating = typeof ratingData === 'string' ? ratingData : (ratingData?.rating || null);
+                const comment = typeof ratingData === 'object' ? (ratingData?.comment || '') : '';
+
+                if (rating === 'like') {
+                    liked.push(file);
+                    if (comment) {
+                        goodComments.push({ file: file.name, comment: comment });
+                    }
+                } else if (rating === 'neutral') {
+                    neutral.push(file);
+                    if (comment) {
+                        badComments.push({ file: file.name, comment: comment });
+                    }
+                } else if (rating === 'dislike') {
+                    disliked.push(file);
+                    if (comment) {
+                        badComments.push({ file: file.name, comment: comment });
+                    }
+                } else {
+                    unrated.push(file);
+                }
+            });
+
+            const likedPercent = total > 0 ? Math.round((liked.length / total) * 100) : 0;
+            const neutralPercent = total > 0 ? Math.round((neutral.length / total) * 100) : 0;
+            const dislikedPercent = total > 0 ? Math.round((disliked.length / total) * 100) : 0;
+            const unratedPercent = total > 0 ? Math.round((unrated.length / total) * 100) : 0;
+
+            // 归纳相似评论
+            const groupedGoodComments = groupSimilarComments(goodComments);
+            const groupedBadComments = groupSimilarComments(badComments);
+
+            // 获取父文件夹名字
+            let parentFolderName = currentFolderName;
+            if (folders.length > 0) {
+                const firstFolder = folders[0];
+                // 如果有 fullPath，从中提取父文件夹名
+                if (firstFolder.fullPath) {
+                    const pathParts = firstFolder.fullPath.split('/');
+                    // 获取第一级路径作为父文件夹名
+                    parentFolderName = pathParts[0] || currentFolderName;
+                } else if (firstFolder.name) {
+                    // 如果没有 fullPath，直接使用 name
+                    parentFolderName = firstFolder.name;
+                }
+            }
+
+            // 生成报告HTML
+            let reportHTML = `
+                <div class="report-header">
+                    <div class="report-folder-name" contenteditable="true">${parentFolderName}</div>
+                    <div class="report-subtitle" contenteditable="true">图片评分报告 · 共 ${total} 张图片</div>
+                </div>
+
+                <div class="report-summary">
+                    <div class="report-stat-card like">
+                        <div class="report-stat-percentage" contenteditable="true">${likedPercent}%</div>
+                        <div class="report-stat-value" contenteditable="true">${liked.length}</div>
+                        <div class="report-stat-label" contenteditable="true">😍 喜欢</div>
+                    </div>
+                    <div class="report-stat-card neutral">
+                        <div class="report-stat-percentage" contenteditable="true">${neutralPercent}%</div>
+                        <div class="report-stat-value" contenteditable="true">${neutral.length}</div>
+                        <div class="report-stat-label" contenteditable="true">😐 一般</div>
+                    </div>
+                    <div class="report-stat-card dislike">
+                        <div class="report-stat-percentage" contenteditable="true">${dislikedPercent}%</div>
+                        <div class="report-stat-value" contenteditable="true">${disliked.length}</div>
+                        <div class="report-stat-label" contenteditable="true">😢 不喜欢</div>
+                    </div>
+                    ${unrated.length > 0 ? `
+                    <div class="report-stat-card">
+                        <div class="report-stat-percentage" contenteditable="true">${unratedPercent}%</div>
+                        <div class="report-stat-value" contenteditable="true">${unrated.length}</div>
+                        <div class="report-stat-label" contenteditable="true">⭕ 未评分</div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+
+            // 添加评论归纳部分
+            if (groupedGoodComments.length > 0 || groupedBadComments.length > 0) {
+                reportHTML += `<div class="report-section" style="margin-top: 30px;">
+                    <div class="report-section-title" style="margin-bottom: 20px;">
+                        <span class="report-section-icon">💬</span>
+                        <span contenteditable="true">文本评价归纳</span>
+                    </div>`;
+
+                // Goodcase 评论
+                if (groupedGoodComments.length > 0) {
+                    reportHTML += `
+                        <div style="background: linear-gradient(135deg, rgba(168, 191, 168, 0.1) 0%, rgba(196, 217, 196, 0.1) 100%); border: 2px solid var(--color-like); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                            <h3 contenteditable="true" style="color: var(--color-like); margin: 0 0 16px 0; font-size: 1.2rem; font-weight: 600;">
+                                ✨ Goodcase - 喜欢的评价
+                            </h3>`;
+
+                    groupedGoodComments.forEach((group, index) => {
+                        reportHTML += `
+                            <div style="margin-bottom: 24px; padding: 12px; background: var(--bg-card); border-radius: 8px; border-left: 4px solid var(--color-like);">
+                                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
+                                    "<span contenteditable="true">${group.representative}</span>" <span contenteditable="true" style="color: var(--text-muted); font-weight: 400; font-size: 0.9rem;">(${group.items.length}张)</span>
+                                </div>
+                                <div class="report-image-list" id="goodcase-group-${index}" style="margin-top: 12px;"></div>
+                            </div>`;
+                    });
+
+                    reportHTML += `</div>`;
+                }
+
+                // Badcase 评论
+                if (groupedBadComments.length > 0) {
+                    reportHTML += `
+                        <div style="background: linear-gradient(135deg, rgba(212, 165, 181, 0.1) 0%, rgba(229, 196, 208, 0.1) 100%); border: 2px solid var(--color-dislike); border-radius: 12px; padding: 20px;">
+                            <h3 contenteditable="true" style="color: var(--color-dislike); margin: 0 0 16px 0; font-size: 1.2rem; font-weight: 600;">
+                                ⚠️ Badcase - 一般/不喜欢的评价
+                            </h3>`;
+
+                    groupedBadComments.forEach((group, index) => {
+                        reportHTML += `
+                            <div style="margin-bottom: 24px; padding: 12px; background: var(--bg-card); border-radius: 8px; border-left: 4px solid var(--color-dislike);">
+                                <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
+                                    "<span contenteditable="true">${group.representative}</span>" <span contenteditable="true" style="color: var(--text-muted); font-weight: 400; font-size: 0.9rem;">(${group.items.length}张)</span>
+                                </div>
+                                <div class="report-image-list" id="badcase-group-${index}" style="margin-top: 12px;"></div>
+                            </div>`;
+                    });
+
+                    reportHTML += `</div>`;
+                }
+
+                reportHTML += `</div>`;
+            }
+
+            container.innerHTML = reportHTML;
+
+            // 渲染 Goodcase 图片
+            if (groupedGoodComments.length > 0) {
+                groupedGoodComments.forEach((group, index) => {
+                    // 根据文件名找到对应的文件对象
+                    const groupFiles = group.items.map(item => {
+                        return allImages.find(file => file.name === item.file);
+                    }).filter(f => f); // 过滤掉未找到的
+
+                    renderReportImages(`goodcase-group-${index}`, groupFiles);
+                });
+            }
+
+            // 渲染 Badcase 图片
+            if (groupedBadComments.length > 0) {
+                groupedBadComments.forEach((group, index) => {
+                    // 根据文件名找到对应的文件对象
+                    const groupFiles = group.items.map(item => {
+                        return allImages.find(file => file.name === item.file);
+                    }).filter(f => f); // 过滤掉未找到的
+
+                    renderReportImages(`badcase-group-${index}`, groupFiles);
+                });
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 渲染报告中的图片列表
+        function renderReportImages(containerId, images) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            images.forEach((file, fileIndex) => {
+                const imageKey = `${file.name}_${file.size}`;
+                const item = document.createElement('div');
+                item.className = 'report-image-item';
+
+                if (isRawFile(file)) {
+                    // RAW文件显示图标
+                    const ext = file.name.split('.').pop().toUpperCase();
+                    item.innerHTML = `
+                        <div class="report-image-thumb">
+                            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                <div style="font-size: 3rem; opacity: 0.6;">📷</div>
+                                <div style="font-size: 0.9rem; color: var(--primary-purple); margin-top: 8px;">${ext}</div>
+                            </div>
+                        </div>
+                        <div class="report-image-filename" contenteditable="true" title="${file.name}">${file.name}</div>
+                    `;
+                } else {
+                    // 普通图片
+                    const itemId = `${containerId}-img-${fileIndex}`;
+                    if (imageCache[imageKey]) {
+                        item.innerHTML = `
+                            <div class="report-image-thumb">
+                                <img src="${imageCache[imageKey]}" alt="${file.name}" id="${itemId}" onclick="openReportImageModal('${itemId}')" title="点击放大">
+                                <button class="report-image-replace-btn" onclick="event.stopPropagation(); replaceReportImage('${itemId}')" title="替换图片">🔄</button>
+                            </div>
+                            <div class="report-image-filename" contenteditable="true" title="${file.name}">${file.name}</div>
+                        `;
+                    } else {
+                        // 读取图片
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            imageCache[imageKey] = e.target.result;
+                            item.innerHTML = `
+                                <div class="report-image-thumb">
+                                    <img src="${e.target.result}" alt="${file.name}" id="${itemId}" onclick="openReportImageModal('${itemId}')" title="点击放大">
+                                    <button class="report-image-replace-btn" onclick="event.stopPropagation(); replaceReportImage('${itemId}')" title="替换图片">🔄</button>
+                                </div>
+                                <div class="report-image-filename" contenteditable="true" title="${file.name}">${file.name}</div>
+                            `;
+                        };
+                        reader.readAsDataURL(file);
+
+                        // 先显示占位符
+                        item.innerHTML = `
+                            <div class="report-image-thumb">
+                                <div style="color: var(--text-muted);">加载中...</div>
+                            </div>
+                            <div class="report-image-filename" contenteditable="true" title="${file.name}">${file.name}</div>
+                        `;
+                    }
+                }
+
+                container.appendChild(item);
+            });
+        }
+
+        // 关闭报告
+        function closeReport() {
+            const modal = document.getElementById('reportModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // 打开帮助
+        function openHelp() {
+            const modal = document.getElementById('helpModal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 关闭帮助
+        function closeHelp() {
+            const modal = document.getElementById('helpModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // 打开报告图片放大查看
+        function openReportImageModal(imgId) {
+            const img = document.getElementById(imgId);
+            if (!img) return;
+
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+
+            modalImage.src = img.src;
+            modal.classList.add('active');
+
+            // 等待图片加载完成后计算最佳初始缩放
+            modalImage.onload = function() {
+                const imgWidth = modalImage.naturalWidth;
+                const imgHeight = modalImage.naturalHeight;
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+
+                // 计算图片宽高比
+                const imgRatio = imgWidth / imgHeight;
+                const viewportRatio = viewportWidth / viewportHeight;
+
+                // 如果图片更宽（横向图片），让它优先填满宽度
+                if (imgRatio > viewportRatio) {
+                    // 横向图片，计算填满95%宽度所需的缩放
+                    const targetWidth = viewportWidth * 0.95;
+                    const naturalDisplayWidth = Math.min(imgWidth, viewportWidth * 0.95);
+                    currentZoom = targetWidth / naturalDisplayWidth;
+                } else {
+                    // 纵向或方形图片，保持默认
+                    currentZoom = 1;
+                }
+
+                currentX = 0;
+                currentY = 0;
+                updateTransform();
+            };
+
+            // 重置缩放和位置（图片加载前）
+            currentZoom = 1;
+            currentX = 0;
+            currentY = 0;
+            updateTransform();
+
+            // 阻止body滚动
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 替换报告中的图片
+        function replaceReportImage(imgId) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = document.getElementById(imgId);
+                    if (img) {
+                        img.src = event.target.result;
+                    }
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        }
+
+        // 导出文件分类列表
+        function exportFileList() {
+            // 统计数据
+            const total = allImages.length;
+            let liked = [], neutral = [], disliked = [], unrated = [];
+
+            allImages.forEach(file => {
+                const imageKey = `${file.name}_${file.size}`;
+                const folderName = file.folderName || '';
+
+                // 获取评分（根据评分模式）
+                let rating = null;
+                if (ratings[imageKey]) {
+                    if (ratingMode === 'single') {
+                        // 单一评分模式：使用主文件夹的评分
+                        const targetFolderIndex = mainFolderIndex !== -1 ? mainFolderIndex : 0;
+                        const targetFolderName = folders[targetFolderIndex] ? folders[targetFolderIndex].name : '';
+                        rating = ratings[imageKey][targetFolderName];
+                    } else {
+                        // 多维评分模式：使用当前文件夹的评分
+                        rating = ratings[imageKey][folderName];
+                    }
+                }
+
+                if (rating === 'like') {
+                    liked.push(file.name);
+                } else if (rating === 'neutral') {
+                    neutral.push(file.name);
+                } else if (rating === 'dislike') {
+                    disliked.push(file.name);
+                } else {
+                    unrated.push(file.name);
+                }
+            });
+
+            // 生成文本格式报告
+            let textContent = `图片评分分类报告
+文件夹：${currentFolderName}
+生成时间：${new Date().toLocaleString('zh-CN')}
+总图片数：${total}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 建议文件夹结构：
+
+${currentFolderName}/
+├── 👍 喜欢/ (${liked.length}张)
+├── 😐 一般/ (${neutral.length}张)
+└── 👎 不喜欢/ (${disliked.length}张)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👍 喜欢的图片 (${liked.length}张)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+
+            if (liked.length > 0) {
+                liked.forEach((name, index) => {
+                    textContent += `${index + 1}. ${name}\n`;
+                });
+            } else {
+                textContent += '（无）\n';
+            }
+
+            textContent += `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+😐 一般的图片 (${neutral.length}张)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+
+            if (neutral.length > 0) {
+                neutral.forEach((name, index) => {
+                    textContent += `${index + 1}. ${name}\n`;
+                });
+            } else {
+                textContent += '（无）\n';
+            }
+
+            textContent += `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👎 不喜欢的图片 (${disliked.length}张)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+`;
+
+            if (disliked.length > 0) {
+                disliked.forEach((name, index) => {
+                    textContent += `${index + 1}. ${name}\n`;
+                });
+            } else {
+                textContent += '（无）\n';
+            }
+
+            textContent += `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📝 使用说明：
+
+1. 在原文件夹中创建三个子文件夹：
+   - "👍 喜欢" 或 "喜欢"
+   - "😐 一般" 或 "一般"
+   - "👎 不喜欢" 或 "不喜欢"
+
+2. 根据上方列表，将对应的图片文件移动到相应文件夹中
+
+3. 建议先复制文件而不是移动，以防万一需要恢复
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+生成工具：Image Gallery Viewer
+`;
+
+            // 创建并下载文本文件
+            const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            const fileName = `${currentFolderName}_文件分类列表_${new Date().toISOString().slice(0, 10)}.txt`;
+            link.download = fileName;
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            URL.revokeObjectURL(link.href);
+
+            // 同时生成JSON格式
+            const jsonData = {
+                folderName: currentFolderName,
+                generatedAt: new Date().toISOString(),
+                total: total,
+                statistics: {
+                    liked: liked.length,
+                    neutral: neutral.length,
+                    disliked: disliked.length,
+                    unrated: unrated.length
+                },
+                categories: {
+                    liked: liked,
+                    neutral: neutral,
+                    disliked: disliked,
+                    unrated: unrated
+                }
+            };
+
+            const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+            const jsonLink = document.createElement('a');
+            const jsonFileName = `${currentFolderName}_文件分类数据_${new Date().toISOString().slice(0, 10)}.json`;
+            jsonLink.download = jsonFileName;
+            jsonLink.href = URL.createObjectURL(jsonBlob);
+            jsonLink.click();
+            URL.revokeObjectURL(jsonLink.href);
+
+            alert('已导出文件分类列表！\n\n包含：\n1. TXT文本文件（便于阅读）\n2. JSON数据文件（便于程序处理）\n\n请根据列表手动整理文件到对应文件夹。');
+        }
+
+        // ==================== 文件夹选择模态框功能 ====================
+
+        // 打开文件夹选择模态框
+        function openFolderSelectModal() {
+            const modal = document.getElementById('folderSelectModal');
+            const list = document.getElementById('folderSelectList');
+            const selectAllCheckbox = document.getElementById('selectAllFolders');
+
+            // 清空列表
+            list.innerHTML = '';
+            selectAllCheckbox.checked = false;
+
+            // 生成文件夹列表
+            pendingFolders.forEach((folder, index) => {
+                const item = document.createElement('div');
+                item.className = 'folder-select-item';
+                item.onclick = function(e) {
+                    if (e.target.type !== 'checkbox') {
+                        const checkbox = this.querySelector('.folder-select-checkbox');
+                        checkbox.checked = !checkbox.checked;
+                        updateFolderSelectItem(this, checkbox.checked);
+                        updateConfirmButton();
+                    }
+                };
+
+                item.innerHTML = `
+                    <input type="checkbox" class="folder-select-checkbox" id="folder_${index}"
+                           onchange="updateFolderSelectItem(this.parentElement, this.checked); updateConfirmButton();">
+                    <div class="folder-select-info">
+                        <div class="folder-select-name">${folder.name}</div>
+                        <div class="folder-select-count">${folder.images.length} 张图片</div>
+                    </div>
+                `;
+
+                list.appendChild(item);
+            });
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            updateConfirmButton();
+        }
+
+        // 关闭文件夹选择模态框
+        function closeFolderSelectModal() {
+            const modal = document.getElementById('folderSelectModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            pendingFolders = [];
+        }
+
+        // 更新文件夹选择项的样式
+        function updateFolderSelectItem(item, checked) {
+            if (checked) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        }
+
+        // 切换全选
+        function toggleSelectAllFolders(checked) {
+            const checkboxes = document.querySelectorAll('.folder-select-checkbox');
+            const items = document.querySelectorAll('.folder-select-item');
+
+            checkboxes.forEach((checkbox, index) => {
+                checkbox.checked = checked;
+                updateFolderSelectItem(items[index], checked);
+            });
+
+            updateConfirmButton();
+        }
+
+        // 更新确认按钮状态
+        function updateConfirmButton() {
+            const checkboxes = document.querySelectorAll('.folder-select-checkbox');
+            const selectedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+            const confirmBtn = document.getElementById('confirmFolderSelectBtn');
+
+            if (selectedCount > 0) {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = `添加选中的 ${selectedCount} 个文件夹`;
+            } else {
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = '请至少选择一个文件夹';
+            }
+        }
+
+        // 确认选择文件夹
+        function confirmFolderSelection() {
+            const checkboxes = document.querySelectorAll('.folder-select-checkbox');
+            let addedCount = 0;
+
+            checkboxes.forEach((checkbox, index) => {
+                if (checkbox.checked) {
+                    const folder = pendingFolders[index];
+
+                    // 检查是否已经添加过该文件夹
+                    if (folders.some(f => f.name === folder.name)) {
+                        console.log(`文件夹"${folder.name}"已存在，跳过`);
+                        return;
+                    }
+
+                    folders.push({
+                        name: folder.name,
+                        fullPath: folder.fullPath,
+                        files: folder.files,
+                        images: folder.images
+                    });
+
+                    addedCount++;
+                    console.log(`已添加文件夹: ${folder.name} (${folder.images.length} 张图片)`);
+                }
+            });
+
+            // 更新文件夹列表显示
+            updateFolderList();
+
+            // 关闭模态框
+            closeFolderSelectModal();
+
+            // 显示成功消息
+            if (addedCount > 0) {
+                alert(`成功添加 ${addedCount} 个文件夹！`);
+            }
+
+            // 批量添加后，快速添加模式下继续
+            if (isQuickAddMode) {
+                setTimeout(() => {
+                    document.getElementById('folderInput').click();
+                }, 100);
+            }
+        }
+
+        // ==================== 快速连续添加模式 ====================
+
+        // 启动/关闭快速添加模式
+        function quickAddMode() {
+            isQuickAddMode = !isQuickAddMode;
+            const btn = document.getElementById('quickAddBtn');
+
+            if (isQuickAddMode) {
+                btn.textContent = '⏸️ 结束连续添加';
+                btn.style.background = 'linear-gradient(135deg, var(--color-gray) 0%, var(--color-gray-light) 100%)';
+
+                alert('🚀 快速连续添加模式已启动！\n\n每次选择文件夹后，会自动弹出下一次选择。\n\n点击"取消"或再次点击"结束连续添加"按钮退出此模式。');
+
+                // 自动触发第一次选择
+                setTimeout(() => {
+                    document.getElementById('folderInput').click();
+                }, 100);
+            } else {
+                btn.textContent = '⚡ 快速连续添加';
+                btn.style.background = 'linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)';
+            }
+        }
+
+        // 监听文件选择对话框的取消操作
+        let lastInputChangeTime = 0;
+        document.getElementById('folderInput').addEventListener('cancel', function() {
+            if (isQuickAddMode) {
+                isQuickAddMode = false;
+                const btn = document.getElementById('quickAddBtn');
+                btn.textContent = '⚡ 快速连续添加';
+                btn.style.background = 'linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)';
+            }
+        });
+
+        // ESC键关闭模态框
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                // 关闭帮助模态框
+                const helpModal = document.getElementById('helpModal');
+                if (helpModal.classList.contains('active')) {
+                    closeHelp();
+                    return;
+                }
+
+                // 关闭文件夹选择模态框
+                const folderSelectModal = document.getElementById('folderSelectModal');
+                if (folderSelectModal.classList.contains('active')) {
+                    closeFolderSelectModal();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
