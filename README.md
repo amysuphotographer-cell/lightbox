@@ -7,7 +7,8 @@
 ### 📁 图片加载
 - 支持单个或多个文件夹加载
 - 支持常见图片格式：JPG, PNG, GIF, WEBP, BMP
-- 支持 RAW 格式：CR2, NEF, ARW, DNG 等
+- 支持 RAW 格式：CR2, CR3, NEF, ARW, ORF, DNG, PEF, SR2, SRF, 3FR, RW2, SRW, RAF, RAW, RWL, MRW, NRW, X3F, ERF, KDC, DCR 等
+- RAW 预览：自动提取嵌入的 JPEG 预览图，无法提取时显示格式图标
 - 快速连续添加多个文件夹
 
 ### ⭐ 评分系统
