@@ -546,6 +546,12 @@
             color: var(--text-primary);
             font-weight: 600;
             font-size: 0.95rem;
+            max-width: 280px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: inline-block;
+            vertical-align: middle;
         }
 
         .folder-count {
@@ -735,6 +741,9 @@
             font-weight: 600;
             color: var(--text-primary);
             margin-bottom: 4px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .folder-select-count {
@@ -3144,7 +3153,7 @@
                         <div class="folder-order">${index + 1}</div>
                         <div>
                             ${folderBadge}
-                            <span class="folder-name">${folder.name}</span>
+                            <span class="folder-name" title="${folder.name}">${folder.name}</span>
                             <span class="folder-count">(${folder.images.length} 张图片)</span>
                         </div>
                     </div>
@@ -5745,6 +5754,9 @@ ${currentFolderName}/
 
         // ==================== 文件夹选择模态框功能 ====================
 
+        // 记录勾选顺序的计数器
+        let checkOrder = 0;
+
         // 打开文件夹选择模态框
         function openFolderSelectModal() {
             const modal = document.getElementById('folderSelectModal');
@@ -5754,6 +5766,7 @@ ${currentFolderName}/
             // 清空列表
             list.innerHTML = '';
             selectAllCheckbox.checked = false;
+            checkOrder = 0; // 重置勾选顺序计数器
 
             // 生成文件夹列表
             pendingFolders.forEach((folder, index) => {
@@ -5763,6 +5776,14 @@ ${currentFolderName}/
                     if (e.target.type !== 'checkbox') {
                         const checkbox = this.querySelector('.folder-select-checkbox');
                         checkbox.checked = !checkbox.checked;
+
+                        // 记录勾选顺序
+                        if (checkbox.checked) {
+                            checkbox.dataset.order = ++checkOrder;
+                        } else {
+                            delete checkbox.dataset.order;
+                        }
+
                         updateFolderSelectItem(this, checkbox.checked);
                         updateConfirmButton();
                     }
@@ -5770,9 +5791,9 @@ ${currentFolderName}/
 
                 item.innerHTML = `
                     <input type="checkbox" class="folder-select-checkbox" id="folder_${index}"
-                           onchange="updateFolderSelectItem(this.parentElement, this.checked); updateConfirmButton();">
+                           onchange="if(this.checked) { this.dataset.order = ++checkOrder; } else { delete this.dataset.order; } updateFolderSelectItem(this.parentElement, this.checked); updateConfirmButton();">
                     <div class="folder-select-info">
-                        <div class="folder-select-name">${folder.name}</div>
+                        <div class="folder-select-name" title="${folder.name}">${folder.name}</div>
                         <div class="folder-select-count">${folder.images.length} 张图片</div>
                     </div>
                 `;
@@ -5835,26 +5856,36 @@ ${currentFolderName}/
             const checkboxes = document.querySelectorAll('.folder-select-checkbox');
             let addedCount = 0;
 
+            // 收集已选中的文件夹，并按照勾选顺序排序
+            const selectedFolders = [];
             checkboxes.forEach((checkbox, index) => {
                 if (checkbox.checked) {
                     const folder = pendingFolders[index];
-
-                    // 检查是否已经添加过该文件夹
-                    if (folders.some(f => f.name === folder.name)) {
-                        console.log(`文件夹"${folder.name}"已存在，跳过`);
-                        return;
-                    }
-
-                    folders.push({
-                        name: folder.name,
-                        fullPath: folder.fullPath,
-                        files: folder.files,
-                        images: folder.images
-                    });
-
-                    addedCount++;
-                    console.log(`已添加文件夹: ${folder.name} (${folder.images.length} 张图片)`);
+                    const order = parseInt(checkbox.dataset.order || '0');
+                    selectedFolders.push({ folder, order });
                 }
+            });
+
+            // 按照勾选顺序排序
+            selectedFolders.sort((a, b) => a.order - b.order);
+
+            // 按顺序添加文件夹
+            selectedFolders.forEach(({ folder }) => {
+                // 检查是否已经添加过该文件夹
+                if (folders.some(f => f.name === folder.name)) {
+                    console.log(`文件夹"${folder.name}"已存在，跳过`);
+                    return;
+                }
+
+                folders.push({
+                    name: folder.name,
+                    fullPath: folder.fullPath,
+                    files: folder.files,
+                    images: folder.images
+                });
+
+                addedCount++;
+                console.log(`已添加文件夹: ${folder.name} (${folder.images.length} 张图片)`);
             });
 
             // 更新文件夹列表显示
