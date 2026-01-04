@@ -2655,26 +2655,51 @@
                 </div>
             </div>
 
+            <!-- 布局选择器 -->
+            <div class="control-group" id="layoutSelector" style="display: none; margin-top: 10px;">
+                <label style="margin-right: 12px;">📐 布局：</label>
+                <select id="layoutRows" onchange="updateLayout()" style="padding: 8px 12px; border-radius: 8px; border: 2px solid var(--border-color); margin-right: 8px; font-size: 0.9rem;">
+                    <option value="1">1 行</option>
+                    <option value="2">2 行</option>
+                    <option value="3">3 行</option>
+                    <option value="4">4 行</option>
+                    <option value="5">5 行</option>
+                    <option value="6">6 行</option>
+                </select>
+                <span style="margin: 0 8px; color: var(--text-muted);">×</span>
+                <select id="layoutCols" onchange="updateLayout()" style="padding: 8px 12px; border-radius: 8px; border: 2px solid var(--border-color); font-size: 0.9rem;">
+                    <option value="1">1 列</option>
+                    <option value="2">2 列</option>
+                    <option value="3" selected>3 列</option>
+                    <option value="4">4 列</option>
+                    <option value="5">5 列</option>
+                    <option value="6">6 列</option>
+                </select>
+                <span style="margin-left: 12px; font-size: 0.85rem; color: var(--text-muted);">
+                    每页显示 <span id="layoutTotal" style="font-weight: 600; color: var(--text-primary);">3</span> 张
+                </span>
+            </div>
+
         </div>
 
         <div class="stats-panel" id="statsPanel" style="display: none;">
             <div class="stats-grid">
-                <div class="stat-item like" onmouseenter="showPreview(event, 'like')" onmouseleave="hidePreview()">
+                <div class="stat-item like">
                     <div class="stat-percentage" id="likedPercent">0%</div>
                     <div class="stat-value" id="likedCount">0</div>
                     <div class="stat-label">😍 喜欢</div>
                 </div>
-                <div class="stat-item neutral" onmouseenter="showPreview(event, 'neutral')" onmouseleave="hidePreview()">
+                <div class="stat-item neutral">
                     <div class="stat-percentage" id="neutralPercent">0%</div>
                     <div class="stat-value" id="neutralCount">0</div>
                     <div class="stat-label">😐 一般</div>
                 </div>
-                <div class="stat-item dislike" onmouseenter="showPreview(event, 'dislike')" onmouseleave="hidePreview()">
+                <div class="stat-item dislike">
                     <div class="stat-percentage" id="dislikedPercent">0%</div>
                     <div class="stat-value" id="dislikedCount">0</div>
                     <div class="stat-label">😢 不喜欢</div>
                 </div>
-                <div class="stat-item" style="background: rgba(155, 143, 165, 0.05); border-color: rgba(155, 143, 165, 0.2);" onmouseenter="showPreview(event, 'unrated')" onmouseleave="hidePreview()">
+                <div class="stat-item" style="background: rgba(155, 143, 165, 0.05); border-color: rgba(155, 143, 165, 0.2);">
                     <div class="stat-percentage" id="unratedPercent">0%</div>
                     <div class="stat-value">
                         <span id="unratedCount">0</span>
@@ -2976,6 +3001,8 @@
         let allImages = [];
         let currentPage = 0;
         let imagesPerPage = 3;
+        let layoutRows = 1; // 布局行数
+        let layoutCols = 3; // 布局列数
         let ratings = {}; // 多维评分结构: { "filename.jpg": { "folder1": "like", "folder2": "dislike" } }
         let folders = []; // 存储所有文件夹信息 [{name: 'folder1', images: [...], files: [...]}]
         let selectedFolders = []; // 选中的文件夹索引列表（按选择顺序）
@@ -3282,6 +3309,50 @@
             this.value = '';
         });
 
+        // 更新布局设置
+        function updateLayout() {
+            const rowsSelect = document.getElementById('layoutRows');
+            const colsSelect = document.getElementById('layoutCols');
+            const totalSpan = document.getElementById('layoutTotal');
+
+            layoutRows = parseInt(rowsSelect.value);
+            layoutCols = parseInt(colsSelect.value);
+            imagesPerPage = layoutRows * layoutCols;
+
+            totalSpan.textContent = imagesPerPage;
+
+            // 保存布局设置
+            localStorage.setItem('layoutRows', layoutRows);
+            localStorage.setItem('layoutCols', layoutCols);
+
+            // 重新显示图片
+            if (allImages.length > 0) {
+                currentPage = 0;
+                displayImages();
+            }
+        }
+
+        // 加载布局设置
+        function loadLayoutSettings() {
+            const savedRows = localStorage.getItem('layoutRows');
+            const savedCols = localStorage.getItem('layoutCols');
+
+            if (savedRows) {
+                layoutRows = parseInt(savedRows);
+                document.getElementById('layoutRows').value = savedRows;
+            }
+            if (savedCols) {
+                layoutCols = parseInt(savedCols);
+                document.getElementById('layoutCols').value = savedCols;
+            }
+
+            imagesPerPage = layoutRows * layoutCols;
+            document.getElementById('layoutTotal').textContent = imagesPerPage;
+        }
+
+        // 页面加载时恢复布局设置
+        loadLayoutSettings();
+
         // 加载全部图片
         function loadImages() {
             if (folders.length === 0) {
@@ -3480,6 +3551,14 @@
             if (folders.length > 0 && allImages.length === 0) {
                 loadImages();
             }
+
+            // 显示布局选择器（单文件夹模式下显示）
+            const layoutSelector = document.getElementById('layoutSelector');
+            if (folders.length === 1) {
+                layoutSelector.style.display = 'flex';
+            } else {
+                layoutSelector.style.display = 'none';
+            }
         }
 
         // 拖拽辅助函数：获取鼠标下方的元素
@@ -3673,8 +3752,10 @@
             gallery.innerHTML = '';
 
             if (folders.length === 1) {
-                // 单文件夹模式：每页显示3张
-                const imagesPerPage = 3;
+                // 单文件夹模式：根据布局设置显示图片
+                // 设置gallery的列数
+                gallery.style.gridTemplateColumns = `repeat(${layoutCols}, 1fr)`;
+
                 const start = currentPage * imagesPerPage;
                 const end = start + imagesPerPage;
                 const currentImages = allImages.slice(start, end);
@@ -3727,6 +3808,9 @@
                 });
             } else {
                 // 多文件夹对比模式：只显示选中的文件夹，按选中顺序排列
+                // 恢复auto-fit布局
+                gallery.style.gridTemplateColumns = 'repeat(auto-fit, minmax(400px, 1fr))';
+
                 selectedFolders.forEach(async (folderIndex) => {
                     const folder = folders[folderIndex];
                     if (!folder) return;
