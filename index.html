@@ -1797,6 +1797,203 @@
             opacity: 0.9;
         }
 
+        /* 自定义图片区域样式 */
+        .custom-image-section {
+            margin: 48px 0;
+            padding: 32px;
+            background: rgba(250, 247, 245, 0.3);
+            border: 2px dashed rgba(155, 143, 165, 0.2);
+            border-radius: 8px;
+            position: relative;
+            page-break-inside: avoid;
+        }
+
+        .custom-image-section:hover {
+            border-color: rgba(155, 143, 165, 0.4);
+        }
+
+        .custom-image-row {
+            display: grid;
+            gap: 0;
+            margin-bottom: 0;
+        }
+
+        .custom-image-row:not(:last-child) {
+            margin-bottom: 0;
+        }
+
+        .custom-image-item {
+            aspect-ratio: 4/3;
+            background: rgba(250, 247, 245, 0.5);
+            border: 1px solid rgba(155, 143, 165, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .custom-image-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .custom-image-item:hover .custom-image-placeholder {
+            color: #9B8FA5;
+        }
+
+        .custom-image-placeholder {
+            color: rgba(155, 143, 165, 0.4);
+            font-size: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        .custom-section-delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 32px;
+            height: 32px;
+            background: rgba(212, 165, 181, 0.9);
+            border: 2px solid white;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .custom-image-section:hover .custom-section-delete-btn {
+            display: flex;
+        }
+
+        .custom-section-delete-btn:hover {
+            background: rgba(212, 165, 181, 1);
+            transform: scale(1.1);
+        }
+
+        .add-image-section-btn {
+            margin: 32px auto;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, rgba(155, 143, 165, 0.1) 0%, rgba(155, 143, 165, 0.05) 100%);
+            border: 2px dashed rgba(155, 143, 165, 0.3);
+            border-radius: 12px;
+            color: #9B8FA5;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .add-image-section-btn:hover {
+            background: linear-gradient(135deg, rgba(155, 143, 165, 0.15) 0%, rgba(155, 143, 165, 0.1) 100%);
+            border-color: rgba(155, 143, 165, 0.5);
+            color: #6A5F74;
+        }
+
+        .image-layout-config {
+            display: none;
+            margin: 24px 0;
+            padding: 24px;
+            background: white;
+            border: 2px solid rgba(155, 143, 165, 0.2);
+            border-radius: 12px;
+            gap: 20px;
+        }
+
+        .image-layout-config.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .config-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .config-label {
+            font-size: 0.9rem;
+            color: #6A5F74;
+            font-weight: 500;
+            min-width: 100px;
+        }
+
+        .config-input {
+            padding: 8px 12px;
+            border: 2px solid rgba(155, 143, 165, 0.2);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            width: 80px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .config-input:focus {
+            border-color: #9B8FA5;
+        }
+
+        .config-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .config-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid;
+        }
+
+        .config-btn-confirm {
+            background: linear-gradient(135deg, #9B8FA5 0%, #7B6D87 100%);
+            border-color: #9B8FA5;
+            color: white;
+        }
+
+        .config-btn-confirm:hover {
+            background: linear-gradient(135deg, #7B6D87 0%, #6B5D77 100%);
+        }
+
+        .config-btn-cancel {
+            background: transparent;
+            border-color: rgba(155, 143, 165, 0.3);
+            color: #9B8FA5;
+        }
+
+        .config-btn-cancel:hover {
+            border-color: rgba(155, 143, 165, 0.5);
+            background: rgba(155, 143, 165, 0.05);
+        }
+
+        @media print {
+            .add-image-section-btn,
+            .image-layout-config,
+            .custom-section-delete-btn {
+                display: none !important;
+            }
+
+            .custom-image-section {
+                border: none;
+                background: transparent;
+                padding: 0;
+            }
+        }
+
         .report-image-grid-filename {
             font-size: 0.7rem;
             color: #9B8FA5;
@@ -5307,6 +5504,33 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 新增图片配置界面 -->
+                <div class="image-layout-config" id="imageLayoutConfig">
+                    <div class="config-row">
+                        <span class="config-label">每行图片数：</span>
+                        <input type="number" class="config-input" id="imagesPerRow" min="1" max="4" value="2">
+                        <span style="font-size: 0.8rem; color: #9B8FA5; margin-left: 8px;">（1-4张）</span>
+                    </div>
+                    <div class="config-row">
+                        <span class="config-label">行数：</span>
+                        <input type="number" class="config-input" id="numberOfRows" min="1" max="10" value="1">
+                        <span style="font-size: 0.8rem; color: #9B8FA5; margin-left: 8px;">（1-10行）</span>
+                    </div>
+                    <div class="config-buttons">
+                        <button class="config-btn config-btn-cancel" onclick="cancelAddImageSection()">取消</button>
+                        <button class="config-btn config-btn-confirm" onclick="confirmAddImageSection()">确认添加</button>
+                    </div>
+                </div>
+
+                <!-- 自定义图片区域容器 -->
+                <div id="customImageSections"></div>
+
+                <!-- 新增图片按钮 -->
+                <button class="add-image-section-btn" onclick="showImageLayoutConfig()">
+                    <span style="font-size: 1.5rem;">➕</span>
+                    <span>新增图片区域</span>
+                </button>
             `;
 
             container.innerHTML = reportHTML;
@@ -5600,6 +5824,126 @@
             const modal = document.getElementById('reportModal');
             modal.classList.remove('active');
             document.body.style.overflow = 'auto';
+        }
+
+        // 显示新增图片配置界面
+        function showImageLayoutConfig() {
+            const config = document.getElementById('imageLayoutConfig');
+            config.classList.add('active');
+            config.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // 取消新增图片
+        function cancelAddImageSection() {
+            const config = document.getElementById('imageLayoutConfig');
+            config.classList.remove('active');
+        }
+
+        // 确认新增图片区域
+        function confirmAddImageSection() {
+            const imagesPerRow = parseInt(document.getElementById('imagesPerRow').value) || 2;
+            const numberOfRows = parseInt(document.getElementById('numberOfRows').value) || 1;
+
+            // 验证输入
+            if (imagesPerRow < 1 || imagesPerRow > 4) {
+                alert('每行图片数必须在1-4之间');
+                return;
+            }
+            if (numberOfRows < 1 || numberOfRows > 10) {
+                alert('行数必须在1-10之间');
+                return;
+            }
+
+            const container = document.getElementById('customImageSections');
+            const sectionId = `custom-section-${Date.now()}`;
+
+            // 创建自定义图片区域
+            const section = document.createElement('div');
+            section.className = 'custom-image-section';
+            section.id = sectionId;
+
+            let sectionHTML = `
+                <button class="custom-section-delete-btn" onclick="deleteImageSection('${sectionId}')" title="删除此区域">✕</button>
+            `;
+
+            // 生成多行图片网格
+            for (let row = 0; row < numberOfRows; row++) {
+                sectionHTML += `
+                    <div class="custom-image-row" style="grid-template-columns: repeat(${imagesPerRow}, 1fr);">
+                `;
+
+                for (let col = 0; col < imagesPerRow; col++) {
+                    const imageId = `${sectionId}-img-${row}-${col}`;
+                    sectionHTML += `
+                        <div class="custom-image-item" id="${imageId}" onclick="selectCustomImage('${imageId}')">
+                            <div class="custom-image-placeholder">📷</div>
+                        </div>
+                    `;
+                }
+
+                sectionHTML += `</div>`;
+            }
+
+            section.innerHTML = sectionHTML;
+            container.appendChild(section);
+
+            // 隐藏配置界面
+            cancelAddImageSection();
+
+            // 滚动到新添加的区域
+            section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        // 删除图片区域
+        function deleteImageSection(sectionId) {
+            if (confirm('确定要删除这个图片区域吗？')) {
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    section.remove();
+                }
+            }
+        }
+
+        // 选择并插入自定义图片
+        async function selectCustomImage(imageId) {
+            try {
+                const [fileHandle] = await window.showOpenFilePicker({
+                    types: [{
+                        description: 'Images',
+                        accept: {
+                            'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp']
+                        }
+                    }],
+                    multiple: false
+                });
+
+                const file = await fileHandle.getFile();
+                const imageUrl = URL.createObjectURL(file);
+
+                const imageItem = document.getElementById(imageId);
+                if (imageItem) {
+                    imageItem.innerHTML = `
+                        <img src="${imageUrl}" alt="${file.name}">
+                        <div class="report-image-grid-replace-btn" onclick="event.stopPropagation(); selectCustomImage('${imageId}')" style="display: none; position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; background: rgba(0, 0, 0, 0.7); border: 2px solid white; border-radius: 8px; color: white; font-size: 1rem; align-items: center; justify-content: center; z-index: 10; cursor: pointer;">
+                            🔄
+                        </div>
+                    `;
+
+                    // 添加悬停显示替换按钮
+                    imageItem.onmouseenter = () => {
+                        const btn = imageItem.querySelector('.report-image-grid-replace-btn');
+                        if (btn) btn.style.display = 'flex';
+                    };
+                    imageItem.onmouseleave = () => {
+                        const btn = imageItem.querySelector('.report-image-grid-replace-btn');
+                        if (btn) btn.style.display = 'none';
+                    };
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('选择图片失败:', err);
+                }
+            }
         }
 
         // 打开帮助
