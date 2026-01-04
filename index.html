@@ -3,48 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Gallery Viewer</title>
+    <title>Lightbox - 专业影像甄选台</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
         :root {
-            /* 莫兰蒂粉紫蓝色系 - 低饱和度、柔和优雅 */
-            --primary-purple: #9B8FA5;
-            --deep-purple: #7B6D87;
-            --deeper-purple: #6A5F74;
-            --light-purple: #C9B5D0;
-            --ultra-light-purple: #E8E3EA;
-            --purple-glow: rgba(155, 143, 165, 0.15);
+            /* Midnight Blue-Purple Palette */
+            --midnight-bg: #0a0a1f;
+            --midnight-deep: #060612;
+            --midnight-purple: #1a1a3e;
+            --midnight-blue: #0d0d2b;
 
-            /* 莫兰蒂功能性颜色 - 绿黄粉配色 */
-            --color-like: #A8BFA8;
-            --color-like-light: #C4D9C4;
-            --color-neutral: #D4C078;
-            --color-neutral-light: #E8D89A;
-            --color-dislike: #D4A5B5;
-            --color-dislike-light: #E5C4D0;
-            --color-blue: #8BA4B5;
-            --color-blue-light: #A5BED0;
-            --color-rose: #C9A5B5;
-            --color-rose-light: #D9BDCA;
-            --color-gray: #9B8FA5;
-            --color-gray-light: #B5A9BA;
+            /* Neon & Glow Colors */
+            --neon-white: #ffffff;
+            --neon-blue: #6b7fff;
+            --neon-purple: #8b5cf6;
+            --neon-violet: #a78bfa;
 
-            /* 浅色背景 - 莫兰蒂灰紫调 */
-            --bg-primary: #F5F2F4;
-            --bg-secondary: #ECE8ED;
-            --bg-card: #FDFCFD;
+            /* Amber Accent */
+            --amber-primary: #ffb84d;
+            --amber-bright: #ffa500;
+            --amber-glow: rgba(255, 184, 77, 0.4);
 
-            /* 深色文字 */
-            --text-primary: #4A4550;
-            --text-secondary: #6D6574;
-            --text-muted: #9B8FA5;
-            --text-title: #2D1B3D;
+            /* Functional Colors - Neon Theme */
+            --color-like: #39FF14;
+            --color-like-light: #7FFF00;
+            --color-neutral: #FFD700;
+            --color-neutral-light: #FFED4E;
+            --color-dislike: #FF3333;
+            --color-dislike-light: #FF6666;
+            --color-blue: #60a5fa;
+            --color-blue-light: #93c5fd;
+            --color-rose: #f472b6;
+            --color-rose-light: #f9a8d4;
+            --color-gray: #6b7280;
+            --color-gray-light: #9ca3af;
 
-            /* 柔和边框和阴影 */
-            --border-color: rgba(155, 143, 165, 0.2);
-            --shadow-lg: 0 20px 60px rgba(123, 109, 135, 0.15);
-            --shadow-md: 0 8px 24px rgba(155, 143, 165, 0.12);
+            /* Dark Backgrounds */
+            --bg-primary: #0a0a1f;
+            --bg-secondary: #050508;
+            --bg-card: #0d0d1a;
+            --bg-control-panel: #0a0a0a;
+
+            /* Light Text for Dark Theme */
+            --text-primary: #e5e7eb;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --text-title: #ffffff;
+
+            /* Purple Glow Effects */
+            --purple-glow: rgba(139, 92, 246, 0.3);
+            --purple-glow-strong: rgba(139, 92, 246, 0.6);
+            --border-color: rgba(139, 92, 246, 0.2);
+            --shadow-lg: 0 20px 60px rgba(139, 92, 246, 0.4);
+            --shadow-md: 0 8px 24px rgba(139, 92, 246, 0.3);
+            --shadow-neon: 0 0 20px rgba(255, 255, 255, 0.5);
         }
 
         * {
@@ -54,8 +67,8 @@
         }
 
         body {
-            font-family: 'Manrope', -apple-system, sans-serif;
-            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--ultra-light-purple) 100%);
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: radial-gradient(ellipse at top, var(--midnight-purple) 0%, var(--midnight-deep) 50%, var(--midnight-bg) 100%);
             color: var(--text-primary);
             min-height: 100vh;
             overflow-x: hidden;
@@ -69,9 +82,21 @@
             right: -50%;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle, rgba(201, 181, 208, 0.15) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, transparent 70%);
             pointer-events: none;
             animation: float 20s ease-in-out infinite;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -30%;
+            left: -30%;
+            width: 60%;
+            height: 60%;
+            background: radial-gradient(circle, rgba(107, 127, 255, 0.05) 0%, transparent 70%);
+            pointer-events: none;
+            animation: float 25s ease-in-out infinite reverse;
         }
 
         @keyframes float {
@@ -105,32 +130,67 @@
         }
 
         h1 {
-            font-size: 3.5rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 5rem;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--text-title) 0%, var(--deep-purple) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--neon-white);
             margin-bottom: 12px;
-            letter-spacing: -0.02em;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            text-shadow:
+                0 0 10px rgba(255, 255, 255, 0.8),
+                0 0 20px rgba(255, 255, 255, 0.6),
+                0 0 30px rgba(255, 255, 255, 0.4),
+                0 0 40px rgba(107, 127, 255, 0.6),
+                0 0 70px rgba(107, 127, 255, 0.4),
+                0 0 100px rgba(107, 127, 255, 0.2);
+            animation: neonPulse 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes neonPulse {
+            from {
+                text-shadow:
+                    0 0 10px rgba(255, 255, 255, 0.8),
+                    0 0 20px rgba(255, 255, 255, 0.6),
+                    0 0 30px rgba(255, 255, 255, 0.4),
+                    0 0 40px rgba(107, 127, 255, 0.6),
+                    0 0 70px rgba(107, 127, 255, 0.4),
+                    0 0 100px rgba(107, 127, 255, 0.2);
+            }
+            to {
+                text-shadow:
+                    0 0 15px rgba(255, 255, 255, 1),
+                    0 0 25px rgba(255, 255, 255, 0.8),
+                    0 0 35px rgba(255, 255, 255, 0.6),
+                    0 0 50px rgba(107, 127, 255, 0.8),
+                    0 0 80px rgba(107, 127, 255, 0.6),
+                    0 0 120px rgba(107, 127, 255, 0.4);
+            }
         }
 
         .subtitle {
-            color: var(--text-muted);
+            color: var(--text-secondary);
             font-size: 1.1rem;
             font-weight: 400;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
+            text-shadow:
+                0 0 10px rgba(255, 255, 255, 0.3),
+                0 0 20px rgba(255, 255, 255, 0.2);
         }
 
         .controls {
-            background: var(--bg-secondary);
+            background: var(--bg-control-panel);
             border: 1px solid var(--border-color);
             border-radius: 20px;
             padding: 30px;
             margin-bottom: 40px;
             backdrop-filter: blur(10px);
             animation: fadeInUp 0.8s ease-out 0.2s both;
-            box-shadow: var(--shadow-md);
+            box-shadow:
+                0 0 1px rgba(139, 92, 246, 0.5),
+                0 0 10px rgba(139, 92, 246, 0.3),
+                0 0 20px rgba(139, 92, 246, 0.2),
+                0 8px 24px rgba(0, 0, 0, 0.8);
         }
 
         @keyframes fadeInUp {
@@ -168,19 +228,162 @@
             display: none;
         }
 
+        /* Button Animations */
+        @keyframes quickAddPulsate {
+            0%, 100% {
+                box-shadow:
+                    0 0 20px rgba(255, 215, 0, 0.6),
+                    0 0 40px rgba(255, 215, 0, 0.4),
+                    0 0 60px rgba(255, 215, 0, 0.2),
+                    0 4px 16px rgba(255, 215, 0, 0.5);
+            }
+            50% {
+                box-shadow:
+                    0 0 30px rgba(255, 215, 0, 0.8),
+                    0 0 60px rgba(255, 215, 0, 0.6),
+                    0 0 90px rgba(255, 215, 0, 0.4),
+                    0 6px 24px rgba(255, 215, 0, 0.7);
+            }
+        }
+
+        @keyframes whiteNeonPulse {
+            0%, 100% {
+                box-shadow:
+                    0 0 20px rgba(255, 255, 255, 0.6),
+                    0 0 40px rgba(255, 255, 255, 0.4),
+                    0 0 60px rgba(255, 255, 255, 0.2);
+            }
+            50% {
+                box-shadow:
+                    0 0 30px rgba(255, 255, 255, 0.8),
+                    0 0 60px rgba(255, 255, 255, 0.6),
+                    0 0 90px rgba(255, 255, 255, 0.4);
+            }
+        }
+
+        @keyframes uvPulse {
+            0%, 100% {
+                box-shadow:
+                    0 0 20px rgba(138, 43, 226, 0.6),
+                    0 0 40px rgba(138, 43, 226, 0.4),
+                    0 0 60px rgba(138, 43, 226, 0.2);
+            }
+            50% {
+                box-shadow:
+                    0 0 30px rgba(138, 43, 226, 0.8),
+                    0 0 60px rgba(138, 43, 226, 0.6),
+                    0 0 90px rgba(138, 43, 226, 0.4);
+            }
+        }
+
+        /* Base Button Styles */
         .file-upload-btn, .load-btn {
-            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
-            color: white;
             border: none;
             padding: 14px 32px;
             border-radius: 12px;
             cursor: pointer;
             font-size: 1rem;
-            font-weight: 600;
+            font-weight: 700;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 16px rgba(155, 143, 165, 0.3);
             position: relative;
             overflow: hidden;
+        }
+
+        /* Amber Gold - Add Folder (唯一实心按钮) */
+        .btn-add-folder {
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+            color: #000;
+            border: none;
+            box-shadow:
+                0 0 20px rgba(255, 215, 0, 0.6),
+                0 0 40px rgba(255, 215, 0, 0.4),
+                0 4px 16px rgba(255, 215, 0, 0.5);
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-add-folder:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(135deg, #FFDD33 0%, #FFB733 100%);
+            box-shadow:
+                0 0 30px rgba(255, 215, 0, 0.8),
+                0 0 60px rgba(255, 215, 0, 0.6),
+                0 6px 24px rgba(255, 215, 0, 0.7);
+        }
+
+        /* White - Quick Add (次要功能幽灵按钮) */
+        .btn-quick-add {
+            background: transparent;
+            color: #FFFFFF;
+            border: 2px solid #FFFFFF;
+            box-shadow:
+                0 0 10px rgba(255, 255, 255, 0.3),
+                0 0 20px rgba(255, 255, 255, 0.2);
+            text-shadow:
+                0 0 10px rgba(255, 255, 255, 0.6),
+                0 0 20px rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-quick-add:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow:
+                0 0 15px rgba(255, 255, 255, 0.5),
+                0 0 30px rgba(255, 255, 255, 0.3),
+                0 4px 16px rgba(255, 255, 255, 0.2);
+            text-shadow:
+                0 0 15px rgba(255, 255, 255, 0.8),
+                0 0 30px rgba(255, 255, 255, 0.6);
+        }
+
+        /* Pure White Neon - Load Images (幽灵按钮) */
+        .btn-load-images {
+            background: transparent;
+            color: #fff;
+            border: 2px solid #fff;
+            box-shadow:
+                0 0 15px rgba(255, 255, 255, 0.4),
+                0 0 30px rgba(255, 255, 255, 0.3);
+            text-shadow:
+                0 0 10px rgba(255, 255, 255, 0.8),
+                0 0 20px rgba(255, 255, 255, 0.6);
+        }
+
+        .btn-load-images:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow:
+                0 0 20px rgba(255, 255, 255, 0.6),
+                0 0 40px rgba(255, 255, 255, 0.4),
+                0 4px 16px rgba(255, 255, 255, 0.3);
+            text-shadow:
+                0 0 15px rgba(255, 255, 255, 1),
+                0 0 30px rgba(255, 255, 255, 0.8);
+        }
+
+        /* Red - Clear Folders (危险操作幽灵按钮) */
+        .btn-clear-folders {
+            background: transparent;
+            color: #FF3333;
+            border: 2px solid #FF3333;
+            box-shadow:
+                0 0 15px rgba(255, 51, 51, 0.4),
+                0 0 30px rgba(255, 51, 51, 0.3);
+            text-shadow:
+                0 0 10px rgba(255, 51, 51, 0.8),
+                0 0 20px rgba(255, 51, 51, 0.6);
+        }
+
+        .btn-clear-folders:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 51, 51, 0.1);
+            box-shadow:
+                0 0 20px rgba(255, 51, 51, 0.6),
+                0 0 40px rgba(255, 51, 51, 0.4),
+                0 4px 16px rgba(255, 51, 51, 0.3);
+            text-shadow:
+                0 0 15px rgba(255, 51, 51, 1),
+                0 0 30px rgba(255, 51, 51, 0.8);
         }
 
         .file-upload-btn::before, .load-btn::before {
@@ -191,7 +394,7 @@
             width: 0;
             height: 0;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.4);
             transform: translate(-50%, -50%);
             transition: width 0.6s, height 0.6s;
         }
@@ -203,7 +406,11 @@
 
         .file-upload-btn:hover, .load-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 24px rgba(155, 143, 165, 0.4);
+            box-shadow:
+                0 0 30px var(--amber-glow),
+                0 0 60px var(--amber-glow),
+                0 0 90px rgba(255, 184, 77, 0.3),
+                0 8px 32px rgba(255, 165, 0, 0.6);
         }
 
         .file-upload-btn:active, .load-btn:active {
@@ -239,18 +446,23 @@
 
         input[type="number"]:focus {
             outline: none;
-            border-color: var(--primary-purple);
-            box-shadow: 0 0 0 4px var(--purple-glow);
+            border-color: var(--neon-purple);
+            box-shadow: 0 0 0 4px var(--purple-glow),
+                        0 0 20px var(--purple-glow);
         }
 
         .stats-panel {
-            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
+            background: var(--bg-control-panel);
             border: 1px solid var(--border-color);
             border-radius: 20px;
             padding: 30px;
             margin-bottom: 40px;
             animation: fadeInUp 0.8s ease-out 0.4s both;
-            box-shadow: var(--shadow-md);
+            box-shadow:
+                0 0 1px rgba(139, 92, 246, 0.5),
+                0 0 10px rgba(139, 92, 246, 0.3),
+                0 0 20px rgba(139, 92, 246, 0.2),
+                0 8px 24px rgba(0, 0, 0, 0.8);
         }
 
         .stats-grid {
@@ -262,18 +474,22 @@
         .stat-item {
             text-align: center;
             padding: 20px;
-            background: var(--bg-primary);
+            background: var(--bg-card);
             border-radius: 16px;
             border: 1px solid var(--border-color);
             transition: all 0.3s ease;
             position: relative;
             cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         }
 
         .stat-item:hover {
             transform: translateY(-4px);
-            border-color: var(--primary-purple);
-            box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+            border-color: var(--neon-purple);
+            box-shadow:
+                0 0 15px rgba(139, 92, 246, 0.4),
+                0 0 30px rgba(139, 92, 246, 0.2),
+                0 8px 20px rgba(0, 0, 0, 0.6);
         }
 
         /* 预览悬浮框 */
@@ -443,12 +659,16 @@
             transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
             animation: scaleIn 0.6s ease-out both;
             position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
         }
 
         .image-card:hover {
             transform: translateY(-8px);
-            box-shadow: var(--shadow-lg);
-            border-color: var(--primary-purple);
+            box-shadow:
+                0 0 20px rgba(139, 92, 246, 0.4),
+                0 0 40px rgba(139, 92, 246, 0.2),
+                0 8px 32px rgba(0, 0, 0, 0.8);
+            border-color: var(--neon-purple);
         }
 
         @keyframes scaleIn {
@@ -474,18 +694,23 @@
             height: 550px;
             overflow: hidden;
             position: relative;
-            background: var(--bg-primary);
+            background: var(--midnight-deep);
+            border-radius: 12px;
         }
 
         .image-container img {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            transition: transform 0.5s ease;
+            transition: transform 0.5s ease, filter 0.3s ease;
+            filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.3))
+                    drop-shadow(0 0 60px rgba(255, 255, 255, 0.2));
         }
 
         .image-card:hover .image-container img {
             transform: scale(1.05);
+            filter: drop-shadow(0 0 40px rgba(255, 255, 255, 0.4))
+                    drop-shadow(0 0 80px rgba(255, 255, 255, 0.3));
         }
 
         .image-name {
@@ -664,9 +889,15 @@
         }
 
         .toggle-rating-btn.active {
-            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
-            color: white;
-            border-color: var(--primary-purple);
+            background: transparent;
+            color: var(--neon-purple);
+            border-color: var(--neon-purple);
+            box-shadow:
+                0 0 15px rgba(139, 92, 246, 0.4),
+                0 0 30px rgba(139, 92, 246, 0.3);
+            text-shadow:
+                0 0 10px rgba(139, 92, 246, 0.8),
+                0 0 20px rgba(139, 92, 246, 0.6);
         }
 
         .folder-remove-btn:hover {
@@ -813,14 +1044,26 @@
         }
 
         .folder-select-btn-primary {
-            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
-            color: white;
-            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+            background: transparent;
+            color: var(--neon-purple);
+            border: 2px solid var(--neon-purple);
+            box-shadow:
+                0 0 15px rgba(139, 92, 246, 0.4),
+                0 0 30px rgba(139, 92, 246, 0.3);
+            text-shadow:
+                0 0 10px rgba(139, 92, 246, 0.8),
+                0 0 20px rgba(139, 92, 246, 0.6);
         }
 
         .folder-select-btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 24px rgba(139, 92, 246, 0.6);
+            background: rgba(139, 92, 246, 0.1);
+            box-shadow:
+                0 0 20px rgba(139, 92, 246, 0.6),
+                0 0 40px rgba(139, 92, 246, 0.4);
+            text-shadow:
+                0 0 15px rgba(139, 92, 246, 1),
+                0 0 30px rgba(139, 92, 246, 0.8);
         }
 
         .folder-select-btn-primary:disabled {
@@ -886,30 +1129,54 @@
 
         .rating-btn:hover {
             transform: translateY(-2px);
-            border-color: var(--primary-purple);
+            border-color: var(--neon-purple);
             color: var(--text-primary);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
         }
 
         .rating-btn.active {
-            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
-            border-color: var(--primary-purple);
-            color: white;
-            box-shadow: 0 4px 16px rgba(155, 143, 165, 0.35);
+            background: transparent;
+            border-color: var(--neon-purple);
+            color: var(--text-primary);
+            box-shadow:
+                0 0 15px rgba(139, 92, 246, 0.4),
+                0 4px 16px rgba(139, 92, 246, 0.3);
         }
 
         .rating-btn.active.like {
-            background: linear-gradient(135deg, var(--color-like) 0%, var(--color-like-light) 100%);
+            background: transparent;
             border-color: var(--color-like);
+            color: var(--color-like);
+            box-shadow:
+                0 0 15px rgba(57, 255, 20, 0.5),
+                0 0 30px rgba(57, 255, 20, 0.3);
+            text-shadow:
+                0 0 10px rgba(57, 255, 20, 0.8),
+                0 0 20px rgba(57, 255, 20, 0.6);
         }
 
         .rating-btn.active.neutral {
-            background: linear-gradient(135deg, var(--color-neutral) 0%, var(--color-neutral-light) 100%);
+            background: transparent;
             border-color: var(--color-neutral);
+            color: var(--color-neutral);
+            box-shadow:
+                0 0 15px rgba(255, 215, 0, 0.5),
+                0 0 30px rgba(255, 215, 0, 0.3);
+            text-shadow:
+                0 0 10px rgba(255, 215, 0, 0.8),
+                0 0 20px rgba(255, 215, 0, 0.6);
         }
 
         .rating-btn.active.dislike {
-            background: linear-gradient(135deg, var(--color-dislike) 0%, var(--color-dislike-light) 100%);
+            background: transparent;
             border-color: var(--color-dislike);
+            color: var(--color-dislike);
+            box-shadow:
+                0 0 15px rgba(255, 51, 51, 0.5),
+                0 0 30px rgba(255, 51, 51, 0.3);
+            text-shadow:
+                0 0 10px rgba(255, 51, 51, 0.8),
+                0 0 20px rgba(255, 51, 51, 0.6);
         }
 
         .comment-box {
@@ -1043,10 +1310,12 @@
         }
 
         .pagination button:hover:not(:disabled) {
-            background: linear-gradient(135deg, var(--primary-purple) 0%, var(--deep-purple) 100%);
-            border-color: var(--primary-purple);
+            background: var(--bg-card);
+            border-color: var(--neon-purple);
             transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
+            box-shadow:
+                0 0 15px rgba(139, 92, 246, 0.4),
+                0 4px 16px rgba(139, 92, 246, 0.3);
         }
 
         .pagination button:disabled {
@@ -2020,6 +2289,76 @@
             background: rgba(155, 143, 165, 0.05);
         }
 
+        /* Hotkey Amber Highlight */
+        .hotkey {
+            display: inline-block;
+            color: #FFD700;
+            font-weight: 800;
+            padding: 2px 8px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            text-shadow:
+                0 0 10px rgba(255, 215, 0, 0.8),
+                0 0 20px rgba(255, 215, 0, 0.6),
+                0 0 30px rgba(255, 215, 0, 0.4);
+            box-shadow:
+                0 0 10px rgba(255, 215, 0, 0.3),
+                0 0 20px rgba(255, 215, 0, 0.2);
+            animation: hotKeyPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes hotKeyPulse {
+            0%, 100% {
+                text-shadow:
+                    0 0 10px rgba(255, 215, 0, 0.8),
+                    0 0 20px rgba(255, 215, 0, 0.6),
+                    0 0 30px rgba(255, 215, 0, 0.4);
+                box-shadow:
+                    0 0 10px rgba(255, 215, 0, 0.3),
+                    0 0 20px rgba(255, 215, 0, 0.2);
+            }
+            50% {
+                text-shadow:
+                    0 0 15px rgba(255, 215, 0, 1),
+                    0 0 25px rgba(255, 215, 0, 0.8),
+                    0 0 35px rgba(255, 215, 0, 0.6);
+                box-shadow:
+                    0 0 15px rgba(255, 215, 0, 0.5),
+                    0 0 30px rgba(255, 215, 0, 0.3);
+            }
+        }
+
+        /* Cursor Star Trail Effect */
+        body {
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="rgba(139, 92, 246, 0.6)"/><circle cx="12" cy="12" r="1.5" fill="white"/></svg>') 12 12, auto;
+        }
+
+        .star-particle {
+            position: fixed;
+            pointer-events: none;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            z-index: 9999;
+            box-shadow:
+                0 0 6px rgba(255, 255, 255, 0.8),
+                0 0 12px rgba(139, 92, 246, 0.6);
+            animation: starFade 0.8s ease-out forwards;
+        }
+
+        @keyframes starFade {
+            0% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.3) translateY(-20px);
+            }
+        }
+
         @media print {
             .add-image-section-btn,
             .image-layout-config,
@@ -2638,22 +2977,22 @@
 <body>
     <div class="container">
         <header>
-            <h1>Image Gallery</h1>
-            <p class="subtitle">本地图片评分查看器</p>
+            <h1>Lightbox</h1>
+            <p class="subtitle">专业影像甄选台 (Professional Image Curation)</p>
         </header>
 
         <div class="controls">
             <div class="control-group">
                 <label>选择图片文件夹：</label>
                 <input type="file" id="folderInput" webkitdirectory directory multiple>
-                <button class="file-upload-btn" onclick="document.getElementById('folderInput').click()" style="background: linear-gradient(135deg, var(--color-blue) 0%, var(--color-blue-light) 100%);">
+                <button class="file-upload-btn btn-add-folder" onclick="document.getElementById('folderInput').click()">
                     📁 添加文件夹
                 </button>
-                <button class="file-upload-btn" id="quickAddBtn" onclick="quickAddMode()" style="background: linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%);">
+                <button class="file-upload-btn btn-quick-add" id="quickAddBtn" onclick="quickAddMode()">
                     ⚡ 快速连续添加
                 </button>
-                <button class="load-btn" onclick="loadImages()" style="background: linear-gradient(135deg, var(--light-purple) 0%, var(--ultra-light-purple) 100%);">🖼️ 加载全部图片</button>
-                <button class="load-btn" onclick="clearFolders()" style="background: linear-gradient(135deg, var(--color-gray) 0%, var(--color-gray-light) 100%);">
+                <button class="load-btn btn-load-images" onclick="loadImages()">🖼️ 加载全部图片</button>
+                <button class="load-btn btn-clear-folders" onclick="clearFolders()">
                     🗑️ 清空文件夹
                 </button>
             </div>
@@ -2879,8 +3218,8 @@
             <div class="mindmap">
                 <!-- 中心节点 -->
                 <div class="mindmap-center">
-                    Image Gallery Viewer<br>
-                    <span style="font-size: 1.2rem; opacity: 0.9;">图片评分与对比工具</span>
+                    Lightbox<br>
+                    <span style="font-size: 1.2rem; opacity: 0.9;">专业影像甄选台 (Professional Image Curation)</span>
                 </div>
 
                 <!-- 分支节点 -->
@@ -2925,9 +3264,9 @@
                         </div>
                         <ul class="mindmap-branch-items">
                             <li><strong>空格键：</strong>下一组图片</li>
-                            <li><strong>A键：</strong>上一组图片</li>
-                            <li><strong>Q键（按住）：</strong>轮换对比文件夹顺序（对比模式或多文件夹主界面）</li>
-                            <li><strong>S键：</strong>截图保存当前显示的图片（多文件夹模式）</li>
+                            <li><strong><span class="hotkey">A</span>键：</strong>上一组图片</li>
+                            <li><strong><span class="hotkey">Q</span>键（按住）：</strong>轮换对比文件夹顺序（对比模式或多文件夹主界面）</li>
+                            <li><strong><span class="hotkey">S</span>键：</strong>截图保存当前显示的图片（多文件夹模式）</li>
                             <li><strong>ESC键：</strong>关闭模态框（对比、报告、帮助）</li>
                         </ul>
                     </div>
@@ -2995,6 +3334,54 @@
     </div>
 
     <script>
+        // Cursor Star Trail Effect
+        (function initStarTrail() {
+            let lastX = 0, lastY = 0;
+            let throttleTimer = null;
+
+            document.addEventListener('mousemove', function(e) {
+                const dx = e.clientX - lastX;
+                const dy = e.clientY - lastY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Only create stars if mouse moved significantly
+                if (distance > 15) {
+                    if (!throttleTimer) {
+                        createStar(e.clientX, e.clientY);
+                        lastX = e.clientX;
+                        lastY = e.clientY;
+
+                        throttleTimer = setTimeout(() => {
+                            throttleTimer = null;
+                        }, 50);
+                    }
+                }
+            });
+
+            function createStar(x, y) {
+                const star = document.createElement('div');
+                star.className = 'star-particle';
+                star.style.left = x + 'px';
+                star.style.top = y + 'px';
+
+                // Random size variation
+                const size = 3 + Math.random() * 3;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+
+                // Random color variation (white to purple)
+                const hue = 250 + Math.random() * 30; // Purple range
+                star.style.background = `hsl(${hue}, 70%, ${70 + Math.random() * 30}%)`;
+
+                document.body.appendChild(star);
+
+                // Remove star after animation
+                setTimeout(() => {
+                    star.remove();
+                }, 800);
+            }
+        })();
+
         // 浏览器兼容性检测
         (function checkBrowserCompatibility() {
             const features = {
@@ -3571,9 +3958,9 @@
                 loadImages();
             }
 
-            // 显示布局选择器（单文件夹模式下显示）
+            // 显示布局选择器（单文件夹和多文件夹模式都显示）
             const layoutSelector = document.getElementById('layoutSelector');
-            if (folders.length === 1) {
+            if (folders.length > 0) {
                 layoutSelector.style.display = 'flex';
             } else {
                 layoutSelector.style.display = 'none';
@@ -3827,14 +4214,22 @@
                 });
             } else {
                 // 多文件夹对比模式：只显示选中的文件夹，按选中顺序排列
-                // 恢复auto-fit布局
-                gallery.style.gridTemplateColumns = 'repeat(auto-fit, minmax(400px, 1fr))';
+                // 应用自定义布局
+                gallery.style.gridTemplateColumns = `repeat(${layoutCols}, 1fr)`;
 
-                selectedFolders.forEach(async (folderIndex) => {
+                // 计算当前页应该显示哪些文件夹
+                // 在多文件夹模式下，imagesPerPage表示每页显示多少个文件夹
+                const foldersPerPage = imagesPerPage;
+                const startFolderIndex = currentPage * foldersPerPage;
+                const endFolderIndex = Math.min(startFolderIndex + foldersPerPage, selectedFolders.length);
+                const currentPageFolders = selectedFolders.slice(startFolderIndex, endFolderIndex);
+
+                // 多文件夹模式：显示每个文件夹的第一张图片
+                currentPageFolders.forEach(async (folderIndex) => {
                     const folder = folders[folderIndex];
                     if (!folder) return;
 
-                    const file = folder.images[currentPage];
+                    const file = folder.images[0]; // 显示每个文件夹的第一张图
 
                     if (file) {
                         const imageKey = `${file.name}_${file.size}`;
@@ -6429,7 +6824,7 @@ ${currentFolderName}/
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-生成工具：Image Gallery Viewer
+生成工具：Lightbox - 专业影像甄选台
 `;
 
             // 创建并下载文本文件
@@ -6635,7 +7030,8 @@ ${currentFolderName}/
 
             if (isQuickAddMode) {
                 btn.textContent = '⏸️ 结束连续添加';
-                btn.style.background = 'linear-gradient(135deg, var(--color-gray) 0%, var(--color-gray-light) 100%)';
+                btn.classList.remove('btn-quick-add');
+                btn.classList.add('btn-clear-folders');
 
                 alert('🚀 快速连续添加模式已启动！\n\n每次选择文件夹后，会自动弹出下一次选择。\n\n点击"取消"或再次点击"结束连续添加"按钮退出此模式。');
 
@@ -6645,7 +7041,8 @@ ${currentFolderName}/
                 }, 100);
             } else {
                 btn.textContent = '⚡ 快速连续添加';
-                btn.style.background = 'linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)';
+                btn.classList.remove('btn-clear-folders');
+                btn.classList.add('btn-quick-add');
             }
         }
 
@@ -6656,7 +7053,8 @@ ${currentFolderName}/
                 isQuickAddMode = false;
                 const btn = document.getElementById('quickAddBtn');
                 btn.textContent = '⚡ 快速连续添加';
-                btn.style.background = 'linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)';
+                btn.classList.remove('btn-clear-folders');
+                btn.classList.add('btn-quick-add');
             }
         });
 
