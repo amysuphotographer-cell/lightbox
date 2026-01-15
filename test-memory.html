@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>内存优化测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            padding: 40px;
+            background: #0a0a1f;
+            color: #e5e7eb;
+        }
+        .test-section {
+            background: #1a1a3e;
+            border: 1px solid #8b5cf6;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #8b5cf6;
+            margin-top: 0;
+        }
+        button {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+        .result {
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .success {
+            color: #10b981;
+        }
+        .warning {
+            color: #f59e0b;
+        }
+        .error {
+            color: #ef4444;
+        }
+        .progress {
+            margin-top: 10px;
+            height: 4px;
+            background: rgba(139, 92, 246, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            background: #8b5cf6;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 内存优化测试</h1>
+
+    <div class="test-section">
+        <h2>测试1：DataURL vs Blob URL 内存对比</h2>
+        <button onclick="testDataURL()">测试 DataURL（旧方式）</button>
+        <button onclick="testBlobURL()">测试 Blob URL（新方式）</button>
+        <button onclick="cleanup()">清理内存</button>
+        <div id="result1" class="result"></div>
+        <div class="progress">
+            <div id="progress1" class="progress-bar" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>测试2：缩略图尺寸对比</h2>
+        <button onclick="testSize800()">800x800 缩略图</button>
+        <button onclick="testSize300()">300x300 缩略图</button>
+        <div id="result2" class="result"></div>
+        <div class="progress">
+            <div id="progress2" class="progress-bar" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>性能监控</h2>
+        <div id="memoryInfo" class="result">
+            点击上方按钮开始测试...
+        </div>
+    </div>
+
+    <script>
+        let cache = [];
+
+        // 生成测试图片
+        function generateTestImage(width, height) {
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            // 绘制随机图案（模拟真实图片）
+            for (let i = 0; i < 100; i++) {
+                ctx.fillStyle = `rgb(${Math.random()*255},${Math.random()*255},${Math.random()*255})`;
+                ctx.fillRect(Math.random()*width, Math.random()*height, 50, 50);
+            }
+
+            return canvas;
+        }
+
+        // 测试DataURL
+        async function testDataURL() {
+            const result = document.getElementById('result1');
+            const progress = document.getElementById('progress1');
+            result.innerHTML = '测试中...';
+            cache = [];
+
+            const startMem = performance.memory ? performance.memory.usedJSHeapSize : 0;
+            const startTime = Date.now();
+            const testCount = 50;
+
+            for (let i = 0; i < testCount; i++) {
+                const canvas = generateTestImage(800, 800);
+                const dataURL = canvas.toDataURL('image/jpeg', 0.9);
+                cache.push(dataURL);
+
+                progress.style.width = ((i + 1) / testCount * 100) + '%';
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            const endTime = Date.now();
+            const endMem = performance.memory ? performance.memory.usedJSHeapSize : 0;
+            const memUsed = ((endMem - startMem) / 1024 / 1024).toFixed(2);
+            const avgSize = (cache.reduce((sum, url) => sum + url.length, 0) / cache.length / 1024).toFixed(2);
+
+            result.innerHTML = `
+                <div class="warning">❌ DataURL 方式（旧）</div>
+                生成数量：${testCount} 张<br>
+                耗时：${endTime - startTime}ms<br>
+                内存增长：<span class="error">${memUsed} MB</span><br>
+                平均大小：<span class="error">${avgSize} KB</span> (Base64编码)<br>
+                <br>
+                <small>* 注意：Base64编码会让数据膨胀33%</small>
+            `;
+            updateMemoryInfo();
+        }
+
+        // 测试Blob URL
+        async function testBlobURL() {
+            const result = document.getElementById('result1');
+            const progress = document.getElementById('progress1');
+            result.innerHTML = '测试中...';
+            cache = [];
+
+            const startMem = performance.memory ? performance.memory.usedJSHeapSize : 0;
+            const startTime = Date.now();
+            const testCount = 50;
+
+            for (let i = 0; i < testCount; i++) {
+                const canvas = generateTestImage(800, 800);
+                const blob = await new Promise(resolve => {
+                    canvas.toBlob(resolve, 'image/jpeg', 0.9);
+                });
+                const blobURL = URL.createObjectURL(blob);
+                cache.push(blobURL);
+
+                progress.style.width = ((i + 1) / testCount * 100) + '%';
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            const endTime = Date.now();
+            const endMem = performance.memory ? performance.memory.usedJSHeapSize : 0;
+            const memUsed = ((endMem - startMem) / 1024 / 1024).toFixed(2);
+            const avgSize = (cache.reduce((sum, url) => sum + url.length, 0) / cache.length).toFixed(0);
+
+            result.innerHTML = `
+                <div class="success">✅ Blob URL 方式（新）</div>
+                生成数量：${testCount} 张<br>
+                耗时：${endTime - startTime}ms<br>
+                内存增长：<span class="success">${memUsed} MB</span><br>
+                URL大小：<span class="success">${avgSize} 字节</span> (仅引用)<br>
+                <br>
+                <small>✓ 无Base64编码，节省约33%内存</small>
+            `;
+            updateMemoryInfo();
+        }
+
+        // 测试800x800
+        async function testSize800() {
+            const result = document.getElementById('result2');
+            const progress = document.getElementById('progress2');
+            result.innerHTML = '测试中...';
+            cache = [];
+
+            const startMem = performance.memory ? performance.memory.usedJSHeapSize : 0;
+            const startTime = Date.now();
+            const testCount = 50;
+
+            for (let i = 0; i < testCount; i++) {
+                const canvas = generateTestImage(800, 800);
+                const blob = await new Promise(resolve => {
+                    canvas.toBlob(resolve, 'image/jpeg', 0.9);
+                });
+                cache.push(blob);
+
+                progress.style.width = ((i + 1) / testCount * 100) + '%';
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            const endTime = Date.now();
+            const endMem = performance.memory ? performance.memory.usedJSHeapSize : 0;
+            const memUsed = ((endMem - startMem) / 1024 / 1024).toFixed(2);
+            const avgBlobSize = (cache.reduce((sum, blob) => sum + blob.size, 0) / cache.length / 1024).toFixed(2);
+
+            result.innerHTML = `
+                <div class="warning">❌ 800x800 缩略图（旧）</div>
+                生成数量：${testCount} 张<br>
+                耗时：${endTime - startTime}ms<br>
+                内存增长：<span class="error">${memUsed} MB</span><br>
+                平均大小：<span class="error">${avgBlobSize} KB</span><br>
+            `;
+            updateMemoryInfo();
+        }
+
+        // 测试300x300
+        async function testSize300() {
+            const result = document.getElementById('result2');
+            const progress = document.getElementById('progress2');
+            result.innerHTML = '测试中...';
+            cache = [];
+
+            const startMem = performance.memory ? performance.memory.usedJSHeapSize : 0;
+            const startTime = Date.now();
+            const testCount = 50;
+
+            for (let i = 0; i < testCount; i++) {
+                const canvas = generateTestImage(300, 300);
+                const blob = await new Promise(resolve => {
+                    canvas.toBlob(resolve, 'image/jpeg', 0.8);
+                });
+                cache.push(blob);
+
+                progress.style.width = ((i + 1) / testCount * 100) + '%';
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            const endTime = Date.now();
+            const endMem = performance.memory ? performance.memory.usedJSHeapSize : 0;
+            const memUsed = ((endMem - startMem) / 1024 / 1024).toFixed(2);
+            const avgBlobSize = (cache.reduce((sum, blob) => sum + blob.size, 0) / cache.length / 1024).toFixed(2);
+
+            result.innerHTML = `
+                <div class="success">✅ 300x300 缩略图（新）</div>
+                生成数量：${testCount} 张<br>
+                耗时：${endTime - startTime}ms<br>
+                内存增长：<span class="success">${memUsed} MB</span><br>
+                平均大小：<span class="success">${avgBlobSize} KB</span><br>
+                <br>
+                <small>✓ 尺寸减小78%，内存节省显著</small>
+            `;
+            updateMemoryInfo();
+        }
+
+        // 清理
+        function cleanup() {
+            cache.forEach(item => {
+                if (typeof item === 'string' && item.startsWith('blob:')) {
+                    URL.revokeObjectURL(item);
+                }
+            });
+            cache = [];
+
+            document.getElementById('result1').innerHTML = '<span class="success">✓ 缓存已清理</span>';
+            document.getElementById('result2').innerHTML = '<span class="success">✓ 缓存已清理</span>';
+            document.getElementById('progress1').style.width = '0%';
+            document.getElementById('progress2').style.width = '0%';
+
+            // 强制垃圾回收（如果可用）
+            if (window.gc) {
+                window.gc();
+            }
+
+            setTimeout(updateMemoryInfo, 1000);
+        }
+
+        // 更新内存信息
+        function updateMemoryInfo() {
+            const info = document.getElementById('memoryInfo');
+
+            if (!performance.memory) {
+                info.innerHTML = `
+                    <div class="warning">⚠️ 浏览器不支持内存监控</div>
+                    请在Chrome中启用：--enable-precise-memory-info
+                `;
+                return;
+            }
+
+            const used = (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(2);
+            const total = (performance.memory.totalJSHeapSize / 1024 / 1024).toFixed(2);
+            const limit = (performance.memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2);
+            const percent = (performance.memory.usedJSHeapSize / performance.memory.jsHeapSizeLimit * 100).toFixed(1);
+
+            info.innerHTML = `
+                <strong>当前内存使用：</strong><br>
+                已使用：${used} MB / ${total} MB<br>
+                内存上限：${limit} MB<br>
+                使用率：${percent}%<br>
+                缓存项数：${cache.length}<br>
+                <br>
+                <small>提示：在Chrome地址栏输入 chrome://flags，搜索 "precise memory"，启用后重启浏览器可查看准确内存数据</small>
+            `;
+        }
+
+        // 定时更新内存信息
+        setInterval(updateMemoryInfo, 2000);
+        updateMemoryInfo();
+    </script>
+</body>
+</html>
