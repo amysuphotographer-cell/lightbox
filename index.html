@@ -5706,8 +5706,21 @@
             document.getElementById('shortcutHint').style.display = 'none';
         }
 
+        // 辅助函数：将FileReader包装成Promise并添加错误处理
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => {
+                    console.error('FileReader error:', e);
+                    reject(new Error(`Failed to read file: ${file.name}`));
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
         // 显示当前页图片
-        function displayImages() {
+        async function displayImages() {
             const gallery = document.getElementById('gallery');
             gallery.innerHTML = '';
 
@@ -5723,46 +5736,50 @@
                 const end = start + imagesPerPage;
                 const currentImages = allImages.slice(start, end);
 
-                currentImages.forEach(async (file) => {
+                // 使用Promise.all并行处理，但保持顺序
+                const imagePromises = currentImages.map(async (file) => {
                     const imageKey = `${file.name}_${file.size}`;
 
-                    if (isRawFile(file)) {
-                        // 检查缓存
-                        if (imageCache[imageKey]) {
-                            const card = createImageCard(file, imageCache[imageKey], false);
-                            gallery.appendChild(card);
-                        } else {
-                            // 尝试提取RAW文件中的预览图
-                            const previewUrl = await extractRawPreview(file);
-                            if (previewUrl) {
-                                // 成功提取预览图，保存到缓存
-                                imageCache[imageKey] = previewUrl;
-                                const card = createImageCard(file, previewUrl, false);
-                                gallery.appendChild(card);
+                    try {
+                        if (isRawFile(file)) {
+                            // 检查缓存
+                            if (imageCache[imageKey]) {
+                                return createImageCard(file, imageCache[imageKey], false);
                             } else {
-                                // 无法提取预览图，显示图标
-                                const card = createImageCard(file, null, true);
-                                gallery.appendChild(card);
+                                // 尝试提取RAW文件中的预览图
+                                const previewUrl = await extractRawPreview(file);
+                                if (previewUrl) {
+                                    // 成功提取预览图，保存到缓存
+                                    imageCache[imageKey] = previewUrl;
+                                    return createImageCard(file, previewUrl, false);
+                                } else {
+                                    // 无法提取预览图，显示图标
+                                    return createImageCard(file, null, true);
+                                }
+                            }
+                        } else {
+                            // 检查缩略图缓存
+                            if (thumbnailCache[imageKey]) {
+                                return createImageCard(file, thumbnailCache[imageKey], false);
+                            } else if (imageCache[imageKey]) {
+                                return createImageCard(file, imageCache[imageKey], false);
+                            } else {
+                                // 读取图片并缓存
+                                const dataUrl = await readFileAsDataURL(file);
+                                imageCache[imageKey] = dataUrl;
+                                return createImageCard(file, dataUrl, false);
                             }
                         }
-                    } else {
-                        // 检查缩略图缓存
-                        if (thumbnailCache[imageKey]) {
-                            const card = createImageCard(file, thumbnailCache[imageKey], false);
-                            gallery.appendChild(card);
-                        } else {
-                            // 参考备份版本：直接用DataURL缓存，避免反复解码
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                // 保存DataURL到缓存（解码一次后浏览器会缓存）
-                                imageCache[imageKey] = e.target.result;
-                                const card = createImageCard(file, e.target.result, false);
-                                gallery.appendChild(card);
-                            };
-                            reader.readAsDataURL(file);
-                        }
+                    } catch (error) {
+                        console.error(`Failed to load image ${file.name}:`, error);
+                        // 即使失败也返回一个占位卡片
+                        return createErrorCard(file);
                     }
                 });
+
+                // 等待所有图片处理完成，然后按顺序添加到gallery
+                const cards = await Promise.all(imagePromises);
+                cards.forEach(card => gallery.appendChild(card));
             } else {
                 // 多文件夹对比模式：按同名图片分组对比
                 gallery.style.gridTemplateColumns = `repeat(${folders.length}, 1fr)`;
@@ -5784,8 +5801,8 @@
                 const currentPageNames = sortedImageNames.slice(start, end);
 
                 // 对每个图片名称，显示所有文件夹中的版本
-                currentPageNames.forEach(async (imageName) => {
-                    folders.forEach(async (folder, folderIndex) => {
+                for (const imageName of currentPageNames) {
+                    const rowPromises = folders.map(async (folder, folderIndex) => {
                         // 查找该文件夹中是否有这个名字的图片
                         const file = folder.images.find(img => img.name === imageName);
 
@@ -5793,38 +5810,37 @@
                             // 有该图片，正常显示
                             const imageKey = `${file.name}_${file.size}`;
 
-                            if (isRawFile(file)) {
-                                // 检查缓存
-                                if (imageCache[imageKey]) {
-                                    const card = createImageCard(file, imageCache[imageKey], false, folderIndex);
-                                    gallery.appendChild(card);
-                                } else {
-                                    // 尝试提取RAW文件中的预览图
-                                    const previewUrl = await extractRawPreview(file);
-                                    if (previewUrl) {
-                                        imageCache[imageKey] = previewUrl;
-                                        const card = createImageCard(file, previewUrl, false, folderIndex);
-                                        gallery.appendChild(card);
+                            try {
+                                if (isRawFile(file)) {
+                                    // 检查缓存
+                                    if (imageCache[imageKey]) {
+                                        return createImageCard(file, imageCache[imageKey], false, folderIndex);
                                     } else {
-                                        const card = createImageCard(file, null, true, folderIndex);
-                                        gallery.appendChild(card);
+                                        // 尝试提取RAW文件中的预览图
+                                        const previewUrl = await extractRawPreview(file);
+                                        if (previewUrl) {
+                                            imageCache[imageKey] = previewUrl;
+                                            return createImageCard(file, previewUrl, false, folderIndex);
+                                        } else {
+                                            return createImageCard(file, null, true, folderIndex);
+                                        }
+                                    }
+                                } else {
+                                    // 检查缩略图缓存
+                                    if (thumbnailCache[imageKey]) {
+                                        return createImageCard(file, thumbnailCache[imageKey], false, folderIndex);
+                                    } else if (imageCache[imageKey]) {
+                                        return createImageCard(file, imageCache[imageKey], false, folderIndex);
+                                    } else {
+                                        // 读取图片并缓存
+                                        const dataUrl = await readFileAsDataURL(file);
+                                        imageCache[imageKey] = dataUrl;
+                                        return createImageCard(file, dataUrl, false, folderIndex);
                                     }
                                 }
-                            } else {
-                                // 检查缩略图缓存
-                                if (thumbnailCache[imageKey]) {
-                                    const card = createImageCard(file, thumbnailCache[imageKey], false, folderIndex);
-                                    gallery.appendChild(card);
-                                } else {
-                                    // 参考备份版本：直接用DataURL缓存
-                                    const reader = new FileReader();
-                                    reader.onload = (e) => {
-                                        imageCache[imageKey] = e.target.result;
-                                        const card = createImageCard(file, e.target.result, false, folderIndex);
-                                        gallery.appendChild(card);
-                                    };
-                                    reader.readAsDataURL(file);
-                                }
+                            } catch (error) {
+                                console.error(`Failed to load image ${file.name}:`, error);
+                                return createErrorCard(file, folderIndex);
                             }
                         } else {
                             // 该文件夹没有这个名字的图片，显示占位符
@@ -5839,13 +5855,46 @@
                                 </div>
                                 <div class="image-name" style="opacity: 0.5;">${folder.name}</div>
                             `;
-                            gallery.appendChild(emptyCard);
+                            return emptyCard;
                         }
                     });
-                });
+
+                    // 等待当前行的所有图片加载完成，然后按顺序添加
+                    const rowCards = await Promise.all(rowPromises);
+                    rowCards.forEach(card => gallery.appendChild(card));
+                }
             }
 
             updatePaginationButtons();
+        }
+
+        // 创建错误卡片（当图片加载失败时显示）
+        function createErrorCard(file, folderIndex = -1) {
+            const card = document.createElement('div');
+            card.className = 'image-card';
+
+            const folderName = file.folderName || (folders[folderIndex] ? folders[folderIndex].name : '');
+            const folderTag = folders.length > 1 && folderName ?
+                `<div class="folder-tag">${folderName}</div>` : '';
+
+            card.innerHTML = `
+                ${folderTag}
+                <div class="image-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.1);">
+                    <div style="font-size: 3rem; margin-bottom: 12px; opacity: 0.5;">⚠️</div>
+                    <div style="font-size: 0.9rem; color: var(--text-muted); text-align: center; padding: 0 20px;">加载失败</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px; opacity: 0.7;">点击重新加载</div>
+                </div>
+                <div class="image-name" title="${file.name}" style="opacity: 0.7;">${file.name}</div>
+            `;
+
+            // 点击重试
+            card.querySelector('.image-container').style.cursor = 'pointer';
+            card.querySelector('.image-container').onclick = () => {
+                Toast.info('正在重新加载...', '重试');
+                displayImages();
+            };
+
+            return card;
         }
 
         // 创建图片卡片
