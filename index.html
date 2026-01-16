@@ -5719,6 +5719,19 @@
             });
         }
 
+        // 辅助函数：标准化图片名称用于智能匹配
+        function normalizeImageName(fileName) {
+            // 去除文件扩展名
+            const nameWithoutExt = fileName.replace(/\.[^.]+$/, '');
+            // 转小写
+            let normalized = nameWithoutExt.toLowerCase();
+            // 去除所有空格、下划线、连字符
+            normalized = normalized.replace(/[\s_-]+/g, '');
+            // 去除前导零（如 001 -> 1）
+            normalized = normalized.replace(/0+(\d+)/g, '$1');
+            return normalized;
+        }
+
         // 显示当前页图片
         async function displayImages() {
             const gallery = document.getElementById('gallery');
@@ -5781,30 +5794,38 @@
                 const cards = await Promise.all(imagePromises);
                 cards.forEach(card => gallery.appendChild(card));
             } else {
-                // 多文件夹对比模式：按同名图片分组对比
+                // 多文件夹对比模式：按同名图片分组对比（智能匹配）
                 gallery.style.gridTemplateColumns = `repeat(${folders.length}, 1fr)`;
 
-                // 收集所有文件夹中的所有图片名称
-                const allImageNames = new Set();
+                // 使用智能匹配：按标准化名称分组图片
+                const imageGroups = new Map(); // 标准化名称 -> 代表名称
+
+                // 为每个文件夹的图片创建标准化名称映射
                 folders.forEach(folder => {
                     folder.images.forEach(img => {
-                        allImageNames.add(img.name);
+                        const normalized = normalizeImageName(img.name);
+                        if (!imageGroups.has(normalized)) {
+                            // 使用第一个遇到的原始名称作为代表名称
+                            imageGroups.set(normalized, img.name);
+                        }
                     });
                 });
 
-                // 转换为数组并排序
-                const sortedImageNames = Array.from(allImageNames).sort();
+                // 按代表名称排序
+                const sortedGroups = Array.from(imageGroups.entries()).sort((a, b) => {
+                    return a[1].localeCompare(b[1], undefined, { numeric: true, sensitivity: 'base' });
+                });
 
-                // 分页显示同名图片组
+                // 分页显示
                 const start = currentPage * imagesPerPage;
                 const end = start + imagesPerPage;
-                const currentPageNames = sortedImageNames.slice(start, end);
+                const currentPageGroups = sortedGroups.slice(start, end);
 
-                // 对每个图片名称，显示所有文件夹中的版本
-                for (const imageName of currentPageNames) {
+                // 对每个图片组，显示所有文件夹中匹配的版本
+                for (const [normalizedName, displayName] of currentPageGroups) {
                     const rowPromises = folders.map(async (folder, folderIndex) => {
-                        // 查找该文件夹中是否有这个名字的图片
-                        const file = folder.images.find(img => img.name === imageName);
+                        // 在该文件夹中查找标准化名称匹配的图片
+                        const file = folder.images.find(img => normalizeImageName(img.name) === normalizedName);
 
                         if (file) {
                             // 有该图片，正常显示
@@ -7151,6 +7172,9 @@
                             reader.onload = (e) => {
                                 imageCache[imageKey] = e.target.result;
                                 addPreviewImage(grid, e.target.result, file.name);
+                            };
+                            reader.onerror = (e) => {
+                                console.error(`统计预览加载失败: ${file.name}`, e);
                             };
                             reader.readAsDataURL(file);
                         }
