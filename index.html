@@ -5974,9 +5974,10 @@
                 `;
             } else {
                 // 所有模式：点击图片打开单图预览
-                // 参考备份版本：直接使用缓存的imageUrl（DataURL已经完整缓存）
+                // 使用data属性存储信息，避免onclick中的转义问题
+                const containerId = `img-container-${imageKey}-${Date.now()}`;
                 imageContent = `
-                    <div class="image-container" style="cursor: pointer;" onclick="openModal('${imageUrl}', '${imageKey}')">
+                    <div class="image-container" id="${containerId}" style="cursor: pointer;" data-image-key="${imageKey}">
                         <img src="${imageUrl}" alt="${file.name}">
                     </div>
                 `;
@@ -6048,6 +6049,16 @@
                 <div class="image-name" title="${file.name}">${file.name}</div>
                 ${ratingBar}
             `;
+
+            // 添加点击事件监听器（避免onclick属性中的转义问题）
+            if (!isRaw) {
+                const container = card.querySelector('.image-container');
+                if (container) {
+                    container.addEventListener('click', function() {
+                        openModal(imageUrl, imageKey);
+                    });
+                }
+            }
 
             return card;
         }
