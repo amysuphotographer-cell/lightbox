@@ -6197,12 +6197,12 @@
                 ${ratingBar}
             `;
 
-            // 添加点击事件监听器（避免onclick属性中的转义问题）
+            // 添加点击事件监听器：打开全屏画廊
             if (!isRaw) {
                 const container = card.querySelector('.image-container');
                 if (container) {
                     container.addEventListener('click', function() {
-                        openModal(imageUrl, imageKey);
+                        openFullscreenGallery();
                     });
                 }
             }
