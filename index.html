@@ -6956,22 +6956,6 @@
                 return;
             }
 
-            // 空格键：预览第一张图片
-            if (e.key === ' ' && !isModalOpen) {
-                e.preventDefault();
-                const firstImage = document.querySelector('.image-container img');
-                if (firstImage) {
-                    const imageUrl = firstImage.src;
-                    const card = firstImage.closest('.image-card');
-                    const onclickAttr = card?.querySelector('.image-container').getAttribute('onclick');
-                    // 提取imageKey
-                    const match = onclickAttr?.match(/'([^']+_\d+)'/);
-                    const imageKey = match ? match[1] : '';
-                    openModal(imageUrl, imageKey);
-                }
-                return;
-            }
-
             // 模态框打开时只响应ESC（已在上面处理）
             if (isModalOpen) {
                 return;
