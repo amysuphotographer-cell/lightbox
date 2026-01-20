@@ -2127,6 +2127,117 @@
             z-index: 10;
         }
 
+        /* 全屏画廊模态框 */
+        .fullscreen-gallery {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--bg-primary);
+            z-index: 10000;
+            overflow: hidden;
+        }
+
+        .fullscreen-gallery.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .gallery-close {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 10001;
+            backdrop-filter: blur(10px);
+        }
+
+        .gallery-close:hover {
+            background: var(--primary-purple);
+            border-color: var(--primary-purple);
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        .gallery-info {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.95rem;
+            z-index: 10001;
+            backdrop-filter: blur(10px);
+        }
+
+        .gallery-container {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            padding: 100px 40px 40px 40px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            align-content: start;
+        }
+
+        .gallery-image-wrapper {
+            position: relative;
+            background: var(--bg-card);
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .gallery-image-wrapper:hover {
+            border-color: var(--primary-purple);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.3);
+        }
+
+        .gallery-image-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-secondary);
+        }
+
+        .gallery-image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            user-select: none;
+        }
+
+        .gallery-image-name {
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+
         /* 报告模态框 */
         /* ==================== 莫兰迪配色 + 简洁设计：报告界面 ==================== */
 
@@ -4368,6 +4479,18 @@
         </div>
         <div class="compare-content" id="compareContent">
             <!-- 对比图片将在这里动态生成 -->
+        </div>
+    </div>
+
+    <!-- 全屏画廊模态框 -->
+    <div class="fullscreen-gallery" id="fullscreenGallery">
+        <div class="gallery-close" onclick="closeFullscreenGallery()">✕</div>
+        <div class="gallery-info" id="galleryInfo">
+            <span id="galleryZoomLevel">100%</span>
+            <span style="margin-left: 16px; opacity: 0.7;">ESC 关闭</span>
+        </div>
+        <div class="gallery-container" id="galleryContainer">
+            <!-- 图片将在这里动态生成 -->
         </div>
     </div>
 
@@ -6732,7 +6855,20 @@
         // ESC键关闭
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                closeModal();
+                // 检查全屏画廊是否打开
+                const gallery = document.getElementById('fullscreenGallery');
+                if (gallery && gallery.classList.contains('active')) {
+                    closeFullscreenGallery();
+                } else {
+                    closeModal();
+                }
+            }
+            // F键：打开全屏画廊
+            if (e.key === 'f' || e.key === 'F') {
+                const gallery = document.getElementById('fullscreenGallery');
+                if (gallery && !gallery.classList.contains('active')) {
+                    openFullscreenGallery();
+                }
             }
         });
 
@@ -7737,6 +7873,106 @@
             isQKeyPressed = false;
             originalCompareImages = null;
             originalFoldersOrder = null;
+        }
+
+        // ==================== 全屏画廊功能 ====================
+
+        // 打开全屏画廊
+        function openFullscreenGallery() {
+            const gallery = document.getElementById('fullscreenGallery');
+            const container = document.getElementById('galleryContainer');
+
+            // 清空容器
+            container.innerHTML = '';
+
+            // 获取当前页的所有图片
+            const currentImages = getCurrentPageImages();
+
+            if (currentImages.length === 0) {
+                Toast.warning('当前页没有图片', '提示');
+                return;
+            }
+
+            // 渲染图片
+            currentImages.forEach((imgData, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'gallery-image-wrapper';
+                wrapper.innerHTML = `
+                    <div class="gallery-image-container">
+                        <img src="${imgData.url}" alt="${imgData.name}">
+                    </div>
+                    <div class="gallery-image-name">${imgData.name}</div>
+                `;
+                container.appendChild(wrapper);
+            });
+
+            // 显示画廊
+            gallery.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            Toast.success('使用滚轮缩放，ESC 关闭', '全屏画廊');
+        }
+
+        // 关闭全屏画廊
+        function closeFullscreenGallery() {
+            const gallery = document.getElementById('fullscreenGallery');
+            gallery.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // 获取当前页的所有图片
+        function getCurrentPageImages() {
+            const images = [];
+
+            if (folders.length === 1) {
+                // 单文件夹模式
+                const start = currentPage * imagesPerPage;
+                const end = start + imagesPerPage;
+                const currentImages = allImages.slice(start, end);
+
+                currentImages.forEach(file => {
+                    const imageKey = `${file.name}_${file.size}`;
+                    const url = imageCache[imageKey] || thumbnailCache[imageKey];
+                    if (url) {
+                        images.push({
+                            name: file.name,
+                            url: url
+                        });
+                    }
+                });
+            } else {
+                // 多文件夹模式：按位置对比
+                const sortedFolders = folders.map(folder => {
+                    return {
+                        ...folder,
+                        sortedImages: [...folder.images].sort((a, b) => {
+                            return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+                        })
+                    };
+                });
+
+                const maxImageCount = Math.max(...sortedFolders.map(f => f.sortedImages.length));
+                const start = currentPage * imagesPerPage;
+                const end = Math.min(start + imagesPerPage, maxImageCount);
+
+                for (let i = start; i < end; i++) {
+                    sortedFolders.forEach((folder, folderIndex) => {
+                        const file = folder.sortedImages[i];
+                        if (file) {
+                            const imageKey = `${file.name}_${file.size}`;
+                            const url = imageCache[imageKey] || thumbnailCache[imageKey];
+                            if (url) {
+                                images.push({
+                                    name: `${folder.name} - ${file.name}`,
+                                    url: url
+                                });
+                            }
+                        }
+                    });
+                }
+            }
+
+            return images;
         }
 
         // 对比图片放大
