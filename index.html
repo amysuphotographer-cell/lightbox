@@ -7877,13 +7877,10 @@
 
         // ==================== 全屏画廊功能 ====================
 
-        // 打开全屏画廊
+        // 打开全屏画廊（优化版：避免卡顿）
         function openFullscreenGallery() {
             const gallery = document.getElementById('fullscreenGallery');
             const container = document.getElementById('galleryContainer');
-
-            // 清空容器
-            container.innerHTML = '';
 
             // 获取当前页的所有图片
             const currentImages = getCurrentPageImages();
@@ -7893,24 +7890,64 @@
                 return;
             }
 
-            // 渲染图片
-            currentImages.forEach((imgData, index) => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'gallery-image-wrapper';
-                wrapper.innerHTML = `
-                    <div class="gallery-image-container">
-                        <img src="${imgData.url}" alt="${imgData.name}">
-                    </div>
-                    <div class="gallery-image-name">${imgData.name}</div>
-                `;
-                container.appendChild(wrapper);
+            // 使用 requestAnimationFrame 优化渲染
+            requestAnimationFrame(() => {
+                // 先显示画廊
+                gallery.classList.add('active');
+                document.body.style.overflow = 'hidden';
+
+                // 清空容器
+                container.innerHTML = '';
+
+                // 分批渲染图片，避免一次性渲染导致卡顿
+                let renderIndex = 0;
+
+                function renderNextBatch() {
+                    const batchSize = 3; // 每批渲染3张
+                    const endIndex = Math.min(renderIndex + batchSize, currentImages.length);
+
+                    for (let i = renderIndex; i < endIndex; i++) {
+                        const imgData = currentImages[i];
+
+                        // 创建元素（避免使用innerHTML，更高效）
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'gallery-image-wrapper';
+
+                        const imgContainer = document.createElement('div');
+                        imgContainer.className = 'gallery-image-container';
+
+                        const img = document.createElement('img');
+                        img.alt = imgData.name;
+                        img.loading = 'lazy'; // 懒加载
+
+                        // 使用 setTimeout 异步设置 src，避免阻塞
+                        setTimeout(() => {
+                            img.src = imgData.url;
+                        }, 0);
+
+                        const nameDiv = document.createElement('div');
+                        nameDiv.className = 'gallery-image-name';
+                        nameDiv.textContent = imgData.name;
+
+                        imgContainer.appendChild(img);
+                        wrapper.appendChild(imgContainer);
+                        wrapper.appendChild(nameDiv);
+                        container.appendChild(wrapper);
+                    }
+
+                    renderIndex = endIndex;
+
+                    // 如果还有图片未渲染，继续下一批
+                    if (renderIndex < currentImages.length) {
+                        requestAnimationFrame(renderNextBatch);
+                    }
+                }
+
+                // 开始渲染
+                renderNextBatch();
+
+                Toast.success('使用滚轮缩放，ESC 关闭', '全屏画廊');
             });
-
-            // 显示画廊
-            gallery.classList.add('active');
-            document.body.style.overflow = 'hidden';
-
-            Toast.success('使用滚轮缩放，ESC 关闭', '全屏画廊');
         }
 
         // 关闭全屏画廊
