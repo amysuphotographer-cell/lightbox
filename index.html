@@ -6401,8 +6401,8 @@
                 currentPage--;
                 displayImages();
                 cleanupOldImages(); // 清理旧页面图片，释放内存
-                // 滚动到页面顶部
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                // 瞬间定位到页面顶部（无动画）
+                window.scrollTo(0, 0);
             }
         }
 
@@ -6423,8 +6423,8 @@
                 currentPage++;
                 displayImages();
                 cleanupOldImages(); // 清理旧页面图片，释放内存
-                // 滚动到页面顶部
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                // 瞬间定位到页面顶部（无动画）
+                window.scrollTo(0, 0);
             }
         }
 
