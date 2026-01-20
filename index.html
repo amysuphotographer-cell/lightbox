@@ -6401,8 +6401,11 @@
                 currentPage--;
                 displayImages();
                 cleanupOldImages(); // 清理旧页面图片，释放内存
-                // 瞬间定位到页面顶部（无动画）
-                window.scrollTo(0, 0);
+                // 滚动到图片展示区域
+                const gallery = document.getElementById('gallery');
+                if (gallery) {
+                    gallery.scrollIntoView({ behavior: 'auto', block: 'start' });
+                }
             }
         }
 
@@ -6423,8 +6426,11 @@
                 currentPage++;
                 displayImages();
                 cleanupOldImages(); // 清理旧页面图片，释放内存
-                // 瞬间定位到页面顶部（无动画）
-                window.scrollTo(0, 0);
+                // 滚动到图片展示区域
+                const gallery = document.getElementById('gallery');
+                if (gallery) {
+                    gallery.scrollIntoView({ behavior: 'auto', block: 'start' });
+                }
             }
         }
 
